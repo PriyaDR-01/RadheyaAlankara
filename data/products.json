@@ -1,0 +1,122 @@
+[
+  {
+    "id": "eeb75d59-cf92-49eb-b38f-72c7d8306a7f",
+    "name": "Pearl Stud Earrings",
+    "slug": "pearl-stud-earrings",
+    "description": "Timeless elegance with lustrous pearls set in 14k gold. These classic studs are perfect for any occasion.",
+    "price": "125.00",
+    "category": "earrings",
+    "images": [
+      "/attached_assets/generated_images/Gold_pearl_stud_earrings_b1fe2830.png"
+    ],
+    "stock": 15,
+    "isBestSeller": 1,
+    "isNewArrival": 0,
+    "material": "14k Gold, Freshwater Pearls"
+  },
+  {
+    "id": "6e9b4577-45b0-44d8-b6e3-a2b77e20dc2a",
+    "name": "Wave Bangle",
+    "slug": "wave-bangle",
+    "description": "Flowing curves capture the essence of water in motion. Handcrafted in 18k gold.",
+    "price": "285.00",
+    "category": "bracelets",
+    "images": [
+      "/attached_assets/generated_images/Gold_wave_bangle_bracelet_8bbe3a36.png"
+    ],
+    "stock": 8,
+    "isBestSeller": 1,
+    "isNewArrival": 0,
+    "material": "18k Gold"
+  },
+  {
+    "id": "e2ee1e30-1d17-4950-b1a1-73e68d5f64cb",
+    "name": "Collar Necklace",
+    "slug": "collar-necklace",
+    "description": "A sophisticated statement piece that frames your neckline beautifully. Modern luxury at its finest.",
+    "price": "465.00",
+    "category": "necklaces",
+    "images": [
+      "/attached_assets/generated_images/Gold_collar_necklace_ecf1d78f.png"
+    ],
+    "stock": 5,
+    "isBestSeller": 1,
+    "isNewArrival": 0,
+    "material": "18k Gold"
+  },
+  {
+    "id": "d80ff672-64f6-4dc1-b19a-f65263ef0020",
+    "name": "Golden Loop Earrings",
+    "slug": "golden-loop-earrings",
+    "description": "Classic hoop earrings with a contemporary twist. Lightweight and comfortable for all-day wear.",
+    "price": "145.00",
+    "category": "earrings",
+    "images": [
+      "/attached_assets/generated_images/Gold_loop_hoop_earrings_c6e47118.png"
+    ],
+    "stock": 20,
+    "isBestSeller": 1,
+    "isNewArrival": 0,
+    "material": "14k Gold"
+  },
+  {
+    "id": "7f6c3bbc-f0eb-4e46-82a1-562516427afa",
+    "name": "Diamond Solitaire Ring",
+    "slug": "diamond-solitaire-ring",
+    "description": "A brilliant cut diamond set in platinum. The ultimate symbol of eternal love.",
+    "price": "1850.00",
+    "category": "rings",
+    "images": [
+      "/attached_assets/generated_images/Diamond_solitaire_ring_54bd7102.png"
+    ],
+    "stock": 3,
+    "isBestSeller": 0,
+    "isNewArrival": 1,
+    "material": "Platinum, 1ct Diamond"
+  },
+  {
+    "id": "497204e5-a0d9-4d54-abab-3d8ea06f9f13",
+    "name": "Chain Link Bracelet",
+    "slug": "chain-link-bracelet",
+    "description": "Delicate chain links create a refined look. Perfect for layering or wearing alone.",
+    "price": "195.00",
+    "category": "bracelets",
+    "images": [
+      "/attached_assets/generated_images/Gold_chain_link_bracelet_6e8dde3d.png"
+    ],
+    "stock": 12,
+    "isBestSeller": 0,
+    "isNewArrival": 1,
+    "material": "14k Gold"
+  },
+  {
+    "id": "94dae29b-3bda-4003-b198-10ddacfa2649",
+    "name": "Textured Band Ring",
+    "slug": "textured-band-ring",
+    "description": "Handcrafted texture adds depth and character to this versatile band.",
+    "price": "320.00",
+    "category": "rings",
+    "images": [
+      "/attached_assets/generated_images/Textured_gold_band_ring_556baf4d.png"
+    ],
+    "stock": 10,
+    "isBestSeller": 0,
+    "isNewArrival": 1,
+    "material": "18k Gold"
+  },
+  {
+    "id": "e22f5ee8-bec1-446c-b415-efcfc4b12db2",
+    "name": "Gemstone Pendant Necklace",
+    "slug": "gemstone-pendant-necklace",
+    "description": "A vibrant gemstone suspended on a delicate gold chain. Effortlessly elegant.",
+    "price": "385.00",
+    "category": "necklaces",
+    "images": [
+      "/attached_assets/generated_images/Gold_gemstone_pendant_necklace_dab0c139.png"
+    ],
+    "stock": 7,
+    "isBestSeller": 0,
+    "isNewArrival": 1,
+    "material": "14k Gold, Natural Gemstone"
+  }
+]

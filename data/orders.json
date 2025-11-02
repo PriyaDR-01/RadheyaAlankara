@@ -1,0 +1,61 @@
+[
+  {
+    "customerName": "Priya",
+    "customerEmail": "priya@gmail.com",
+    "customerPhone": "9901954643",
+    "shippingAddress": "bangalore",
+    "city": "Bangalore",
+    "state": "Karnataka",
+    "pinCode": "560058",
+    "items": [
+      {
+        "productId": "e2ee1e30-1d17-4950-b1a1-73e68d5f64cb",
+        "name": "Collar Necklace",
+        "price": 465,
+        "image": "/attached_assets/generated_images/Gold_collar_necklace_ecf1d78f.png",
+        "quantity": 1
+      },
+      {
+        "productId": "eeb75d59-cf92-49eb-b38f-72c7d8306a7f",
+        "name": "Pearl Stud Earrings",
+        "price": 125,
+        "image": "/attached_assets/generated_images/Gold_pearl_stud_earrings_b1fe2830.png",
+        "quantity": 1
+      }
+    ],
+    "subtotal": "590",
+    "shipping": "50",
+    "total": "640",
+    "paymentMethod": "cod",
+    "id": "5e35ab33-b961-4ac6-9e36-d4232c712c70",
+    "paymentStatus": "pending",
+    "orderStatus": "processing",
+    "createdAt": "2025-10-22T09:46:53.546Z"
+  },
+  {
+    "customerName": "Priya",
+    "customerEmail": "priya@gmail.com",
+    "customerPhone": "9901954643",
+    "shippingAddress": "jsdfn",
+    "city": "mfd",
+    "state": "kfn",
+    "pinCode": "560058",
+    "items": [
+      {
+        "productId": "d80ff672-64f6-4dc1-b19a-f65263ef0020",
+        "name": "Golden Loop Earrings",
+        "price": 145,
+        "image": "/attached_assets/generated_images/Gold_loop_hoop_earrings_c6e47118.png",
+        "quantity": 1
+      }
+    ],
+    "subtotal": "145",
+    "shipping": "50",
+    "total": "195",
+    "paymentMethod": "cod",
+    "id": "527a2497-de1d-43e9-88f7-336b3dd621b7",
+    "paymentStatus": "pending",
+    "orderStatus": "processing",
+    "createdAt": "2025-10-22T09:55:59.741Z"
+  }
+]
