@@ -1,0 +1,30 @@
+[
+  {
+    "id": "4cbabe73-61ac-4f96-87d7-121b83b03bfa",
+    "name": "Rings",
+    "slug": "rings",
+    "description": "Symbols of eternal love and commitment",
+    "image": ""
+  },
+  {
+    "id": "327103b6-bd0e-475e-8624-808b815f12ab",
+    "name": "Earrings",
+    "slug": "earrings",
+    "description": "Elegant accents for every occasion",
+    "image": ""
+  },
+  {
+    "id": "d2cfdfea-77a3-4b44-8e64-7ac2e50f075f",
+    "name": "Necklaces",
+    "slug": "necklaces",
+    "description": "Statement pieces that capture attention",
+    "image": ""
+  },
+  {
+    "id": "a77b73d3-ca6f-43fa-b797-f43235d7b8c6",
+    "name": "Bracelets",
+    "slug": "bracelets",
+    "description": "Delicate adornments for your wrist",
+    "image": ""
+  }
+]
