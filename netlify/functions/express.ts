@@ -41,3 +41,24 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
 
 // Export the handler using serverless-http
 export const handler = serverless(app as any);
+
+// Diagnostic info for debugging in deployed function environments
+try {
+  console.log('Function startup diagnostics:');
+  console.log(' process.cwd():', process.cwd());
+  // __dirname is available in CommonJS; in bundled ESM it will exist as a variable produced by esbuild
+  try { console.log(' __dirname:', __dirname); } catch (e) { console.log(' __dirname not available'); }
+  // Attempt to list copied data directory if present
+  import('fs').then(fsmod => {
+    const dataDir = `${process.cwd()}/netlify/functions/data`;
+    fsmod.promises.readdir(dataDir).then(files => {
+      console.log(' netlify/functions/data contents:', files);
+    }).catch(() => {
+      console.log(' netlify/functions/data not found or not readable');
+    });
+  }).catch(() => {
+    console.log(' fs module import failed for diagnostics');
+  });
+} catch (e) {
+  console.error('Diagnostics logging failed:', e);
+}

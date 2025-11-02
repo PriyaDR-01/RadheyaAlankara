@@ -76,42 +76,82 @@ export class MemStorage implements IStorage {
 
   private async init() {
     if (this.initialized) return;
-    
+
     try {
       console.log('Initializing storage with DATA_DIR:', DATA_DIR);
       await fs.mkdir(DATA_DIR, { recursive: true });
-      
-      // Load products
+
+      // Load products (prefer read-only built data in dist/public/api when available)
       try {
-        console.log('Reading products from:', PRODUCTS_FILE);
-        const productsData = await fs.readFile(PRODUCTS_FILE, 'utf-8');
-        const products: Product[] = JSON.parse(productsData);
-        products.forEach(p => this.products.set(p.id, p));
-        console.log(`Loaded ${products.length} products`);
+        const productsPathCandidates = [
+          path.join(process.cwd(), 'dist', 'public', 'api', 'products.json'),
+          path.join(process.cwd(), 'netlify', 'functions', 'data', 'products.json'),
+          PRODUCTS_FILE,
+          path.join(__dirname, '..', 'data', 'products.json')
+        ];
+
+        let productsData: string | null = null;
+        for (const pPath of productsPathCandidates) {
+          try {
+            if (fsSync.existsSync(pPath)) {
+              console.log('Reading products from:', pPath);
+              productsData = await fs.readFile(pPath, 'utf-8');
+              break;
+            }
+          } catch (e) {
+            // ignore and continue
+          }
+        }
+
+        if (!productsData) {
+          console.log('products.json not found in candidates, seeding initial data');
+          await this.seedInitialData();
+        } else {
+          const products: Product[] = JSON.parse(productsData);
+          products.forEach(p => this.products.set(p.id, p));
+          console.log(`Loaded ${products.length} products`);
+        }
       } catch (error) {
         console.error('Error loading products:', error);
-        // File doesn't exist yet, will be created on first write
         await this.seedInitialData();
       }
-      
-      // Load categories
+
+      // Load categories (prefer dist/public/api)
       try {
-        const categoriesData = await fs.readFile(CATEGORIES_FILE, 'utf-8');
-        const categories: Category[] = JSON.parse(categoriesData);
-        categories.forEach(c => this.categories.set(c.id, c));
+        const categoriesPathCandidates = [
+          path.join(process.cwd(), 'dist', 'public', 'api', 'categories.json'),
+          path.join(process.cwd(), 'netlify', 'functions', 'data', 'categories.json'),
+          CATEGORIES_FILE,
+          path.join(__dirname, '..', 'data', 'categories.json')
+        ];
+        let categoriesData: string | null = null;
+        for (const cPath of categoriesPathCandidates) {
+          try {
+            if (fsSync.existsSync(cPath)) {
+              categoriesData = await fs.readFile(cPath, 'utf-8');
+              break;
+            }
+          } catch (e) {}
+        }
+        if (categoriesData) {
+          const categories: Category[] = JSON.parse(categoriesData);
+          categories.forEach(c => this.categories.set(c.id, c));
+        }
       } catch (error) {
-        // File doesn't exist yet, categories seeded in seedInitialData
+        // ignore - categories seeded in seedInitialData if missing
       }
-      
-      // Load orders
+
+      // Load orders (orders are write-heavy; try to read from DATA_DIR only)
       try {
-        const ordersData = await fs.readFile(ORDERS_FILE, 'utf-8');
-        const orders: any[] = JSON.parse(ordersData);
-        orders.forEach(o => this.orders.set(o.id, o));
+        if (fsSync.existsSync(ORDERS_FILE)) {
+          const ordersData = await fs.readFile(ORDERS_FILE, 'utf-8');
+          const orders: any[] = JSON.parse(ordersData);
+          orders.forEach(o => this.orders.set(o.id, o));
+        }
       } catch (error) {
         // File doesn't exist yet, will be created on first write
       }
-      
+
       this.initialized = true;
     } catch (error) {
       console.error('Error initializing storage:', error);
