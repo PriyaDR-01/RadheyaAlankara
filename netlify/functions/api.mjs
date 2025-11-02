@@ -30,7 +30,7 @@ var readJsonFile = (filename) => {
   }
 };
 var handler = async (event, context) => {
-  const { path: requestPath, httpMethod } = event;
+  const { httpMethod, queryStringParameters } = event;
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type",
@@ -52,7 +52,9 @@ var handler = async (event, context) => {
     };
   }
   try {
-    const apiPath = requestPath.replace("/.netlify/functions/api", "");
+    const apiPath = "/" + (queryStringParameters?.path || "products");
+    console.log("API Path:", apiPath);
+    console.log("Query parameters:", queryStringParameters);
     switch (apiPath) {
       case "/products":
         const products = readJsonFile("products.json");

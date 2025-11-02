@@ -38,7 +38,7 @@ const readJsonFile = (filename: string) => {
 };
 
 export const handler: Handler = async (event, context) => {
-  const { path: requestPath, httpMethod } = event;
+  const { httpMethod, queryStringParameters } = event;
   
   // Enable CORS
   const headers = {
@@ -65,8 +65,11 @@ export const handler: Handler = async (event, context) => {
   }
 
   try {
-    // Extract the API path from the Netlify function path
-    const apiPath = requestPath.replace('/.netlify/functions/api', '');
+    // Get the API path from query parameters
+    const apiPath = '/' + (queryStringParameters?.path || 'products');
+    
+    console.log('API Path:', apiPath);
+    console.log('Query parameters:', queryStringParameters);
     
     switch (apiPath) {
       case '/products':
