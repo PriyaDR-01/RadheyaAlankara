@@ -12,7 +12,17 @@ export type User = {
   password: string;
 };
 
-const DATA_DIR = path.join(process.cwd(), "data");
+// Determine data directory based on environment
+const getDataDir = () => {
+  // In production (Netlify), data is copied to dist/data
+  if (process.env.NODE_ENV === 'production') {
+    return path.join(process.cwd(), "data");
+  }
+  // In development, use the source data directory
+  return path.join(process.cwd(), "data");
+};
+
+const DATA_DIR = getDataDir();
 const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
 const CATEGORIES_FILE = path.join(DATA_DIR, "categories.json");
 const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
@@ -55,14 +65,18 @@ export class MemStorage implements IStorage {
     if (this.initialized) return;
     
     try {
+      console.log('Initializing storage with DATA_DIR:', DATA_DIR);
       await fs.mkdir(DATA_DIR, { recursive: true });
       
       // Load products
       try {
+        console.log('Reading products from:', PRODUCTS_FILE);
         const productsData = await fs.readFile(PRODUCTS_FILE, 'utf-8');
         const products: Product[] = JSON.parse(productsData);
         products.forEach(p => this.products.set(p.id, p));
+        console.log(`Loaded ${products.length} products`);
       } catch (error) {
+        console.error('Error loading products:', error);
         // File doesn't exist yet, will be created on first write
         await this.seedInitialData();
       }

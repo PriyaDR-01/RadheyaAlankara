@@ -33,12 +33,13 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <Link href={`/product/${product.slug}`} data-testid={`link-product-${product.id}`}>
       <div className="cursor-pointer">
-        <Card className="group overflow-hidden border-card-border hover-elevate transition-all duration-300">
+        <Card className="group overflow-hidden border-card-border hover-elevate transition-all duration-300 h-full">
           <div className="relative aspect-square overflow-hidden bg-muted">
             <img
               src={product.images[0]}
               alt={product.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+              loading="lazy"
               data-testid={`img-product-${product.id}`}
             />
             {product.isBestSeller === 1 && (
@@ -69,18 +70,18 @@ export function ProductCard({ product }: ProductCardProps) {
             </div>
           </div>
           
-          <div className="p-6">
+          <div className="p-4 md:p-6">
             <h3
-              className="font-serif text-lg font-normal mb-2 line-clamp-1"
+              className="font-serif text-base md:text-lg font-normal mb-2 line-clamp-2"
               data-testid={`text-product-name-${product.id}`}
             >
               {product.name}
             </h3>
             <p
-              className="font-accent text-2xl font-semibold text-chart-2"
+              className="font-accent text-xl md:text-2xl font-semibold text-chart-2"
               data-testid={`text-product-price-${product.id}`}
             >
-              {parseFloat(product.price).toFixed(2)}
+              ₹{parseFloat(product.price).toFixed(2)}
             </p>
           </div>
         </Card>
