@@ -23,31 +23,13 @@
   functions = "netlify/functions"
 
 [[redirects]]
-  # Handle API routes through Netlify Functions with path parameter
+  # Handle API routes through Netlify Functions
   from = "/api/*"
   to = "/.netlify/functions/express?path=:splat"
   status = 200
 
 [[redirects]]
-  # Fallback for direct function access
-  from = "/.netlify/functions/express/*"
-  to = "/.netlify/functions/express?path=:splat"
-  status = 200
-
-[[redirects]]
-  # Direct backup endpoint for products
-  from = "/api/products/direct"
-  to = "/.netlify/functions/products"
-  status = 200
-
-[[redirects]]
-  # Debug endpoint
-  from = "/api/debug"
-  to = "/.netlify/functions/debug"
-  status = 200
-
-[[redirects]]
-  # Handle client-side routing
+  # Handle client-side routing - must be last
   from = "/*"
   to = "/index.html"
   status = 200
