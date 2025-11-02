@@ -10,6 +10,8 @@ import { readFileSync } from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+console.log('Function starting, __dirname:', __dirname);
+
 const app = express();
 
 // Enable CORS
@@ -21,11 +23,19 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Express error:', err);
+  res.status(500).json({ error: 'Internal server error', message: err.message });
+});
+
 // Load data synchronously
 let products = [];
 let categories = [];
 let orders = [];
 let users = [];
+
+console.log('Attempting to load data files...');
 
 try {
   const productsData = readFileSync(path.join(__dirname, 'data', 'products.json'), 'utf-8');
@@ -179,9 +189,43 @@ app.get('/api/debug', (req, res) => {
   });
 });
 
+console.log('Data loaded successfully:', {
+  products: products.length,
+  categories: categories.length,
+  orders: orders.length,
+  users: users.length
+});
+
 // Handle 404
 app.use('/api/*', (req, res) => {
+  console.log('404 for path:', req.path);
   res.status(404).json({ error: 'API endpoint not found' });
 });
 
-export const handler = serverlessHttp(app);
+const serverlessHandler = serverlessHttp(app);
+
+export const handler = async (event, context) => {
+  try {
+    console.log('Handler called with:', {
+      httpMethod: event.httpMethod,
+      path: event.path,
+      query: event.queryStringParameters
+    });
+    
+    return await serverlessHandler(event, context);
+  } catch (error) {
+    console.error('Handler error:', error);
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ 
+        error: 'Function execution failed', 
+        message: error.message,
+        stack: error.stack 
+      })
+    };
+  }
+};

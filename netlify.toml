@@ -25,19 +25,19 @@
 [[redirects]]
   # Handle specific API routes
   from = "/api/products/best-sellers"
-  to = "/.netlify/functions/best-sellers"
+  to = "/.netlify/functions/express?path=api/products/best-sellers"
   status = 200
 
 [[redirects]]
   # Handle specific API routes
   from = "/api/products/new-arrivals"
-  to = "/.netlify/functions/new-arrivals"
+  to = "/.netlify/functions/express?path=api/products/new-arrivals"
   status = 200
 
 [[redirects]]
   # Handle category routes
   from = "/api/products/category/*"
-  to = "/.netlify/functions/express?path=:splat"
+  to = "/.netlify/functions/express?path=api/products/category/:splat"
   status = 200
 
 [[redirects]]
