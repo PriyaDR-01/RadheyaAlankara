@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx server/index.ts",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
-    "build:client": "vite build && npm run copy:data",
+    "build:client": "vite build && npm run copy:data && npm run build:functions",
+    "build:functions": "node build-functions.mjs",
     "copy:data": "cp -r data netlify/functions/ || xcopy data netlify\\functions\\data\\ /E /I /Y",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",

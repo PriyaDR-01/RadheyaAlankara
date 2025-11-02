@@ -14,6 +14,14 @@
 [build.environment]
   NODE_VERSION = "18"
 
+[dev]
+  # Local development settings
+  command = "npm run dev"
+  targetPort = 3000
+  port = 8888
+  publish = "dist/public"
+  functions = "netlify/functions"
+
 [[redirects]]
   # Handle API routes through Netlify Functions
   from = "/api/*"

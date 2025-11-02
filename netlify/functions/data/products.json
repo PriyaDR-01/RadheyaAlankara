@@ -52,7 +52,7 @@
     "price": "145.00",
     "category": "earrings",
     "images": [
-      "/attached_assets/generated_images/Gold_loop_hoop_earrings_c6e47118.png"
+      "/attached_assets/products/earing_02.png"
     ],
     "stock": 20,
     "isBestSeller": 1,
@@ -112,7 +112,7 @@
     "price": "385.00",
     "category": "necklaces",
     "images": [
-      "/attached_assets/generated_images/Gold_gemstone_pendant_necklace_dab0c139.png"
+      "/attached_assets/products/necklace_02.png"
     ],
     "stock": 7,
     "isBestSeller": 0,

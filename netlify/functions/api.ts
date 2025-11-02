@@ -1,20 +1,38 @@
 import { Handler } from '@netlify/functions';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get the directory name for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Simple storage implementation for Netlify Functions
 const getDataPath = (filename: string) => {
-  // In Netlify Functions, data files should be in the same directory or accessible
-  return path.join(process.cwd(), 'data', filename);
+  // In Netlify Functions, data files are in the same directory
+  return path.join(__dirname, 'data', filename);
 };
 
 const readJsonFile = (filename: string) => {
   try {
     const filePath = getDataPath(filename);
+    console.log('Attempting to read file:', filePath);
+    
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      console.error('File does not exist:', filePath);
+      console.log('Available files in directory:', fs.readdirSync(path.dirname(filePath)));
+      return [];
+    }
+    
     const data = fs.readFileSync(filePath, 'utf-8');
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    console.log(`Successfully loaded ${filename} with ${parsed.length || 0} items`);
+    return parsed;
   } catch (error) {
     console.error(`Error reading ${filename}:`, error);
+    console.log('Working directory:', process.cwd());
+    console.log('Function directory:', __dirname);
     return [];
   }
 };
