@@ -2,9 +2,12 @@ import esbuild from 'esbuild';
 import fs from 'fs';
 import path from 'path';
 
-// Build the Netlify function
+// Build the Netlify functions (static API + full Express wrapper)
 await esbuild.build({
-  entryPoints: ['netlify/functions/api.ts'],
+  entryPoints: [
+    'netlify/functions/api.ts',
+    'netlify/functions/express.ts'
+  ],
   bundle: true,
   platform: 'node',
   target: 'node18',
@@ -17,4 +20,4 @@ await esbuild.build({
   }
 });
 
-console.log('✅ Netlify function built successfully');
+console.log('✅ Netlify functions built successfully');

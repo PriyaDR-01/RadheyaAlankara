@@ -1,6 +1,7 @@
 import { type Product, type InsertProduct, type Category, type InsertCategory } from "@shared/schema";
 import { randomUUID } from "crypto";
 import fs from "fs/promises";
+import fsSync from "fs";
 import path from "path";
 
 // --- User type for user storage ---
@@ -14,12 +15,24 @@ export type User = {
 
 // Determine data directory based on environment
 const getDataDir = () => {
-  // In production (Netlify), data is copied to dist/data
-  if (process.env.NODE_ENV === 'production') {
-    return path.join(process.cwd(), "data");
+  // Prefer common locations where data may be placed during builds or function bundling
+  const candidates = [
+    path.join(process.cwd(), 'data'), // top-level data (root)
+    path.join(process.cwd(), 'netlify', 'functions', 'data'), // copied into netlify/functions/data
+    path.join(__dirname, '..', 'data'), // relative to server folder
+    path.join(__dirname, 'data'),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      if (fsSync.existsSync(candidate)) return candidate;
+    } catch (e) {
+      // ignore and continue
+    }
   }
-  // In development, use the source data directory
-  return path.join(process.cwd(), "data");
+
+  // fallback to root data path
+  return path.join(process.cwd(), 'data');
 };
 
 const DATA_DIR = getDataDir();

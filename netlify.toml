@@ -25,13 +25,13 @@
 [[redirects]]
   # Handle API routes through Netlify Functions with path parameter
   from = "/api/*"
-  to = "/.netlify/functions/api?path=:splat"
+  to = "/.netlify/functions/express?path=:splat"
   status = 200
 
 [[redirects]]
   # Fallback for direct function access
-  from = "/.netlify/functions/api/*"
-  to = "/.netlify/functions/api?path=:splat"
+  from = "/.netlify/functions/express/*"
+  to = "/.netlify/functions/express?path=:splat"
   status = 200
 
 [[redirects]]
