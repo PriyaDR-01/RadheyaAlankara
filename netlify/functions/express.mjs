@@ -32239,25 +32239,64 @@ var MemStorage = class {
       console.log("Initializing storage with DATA_DIR:", DATA_DIR);
       await fs.mkdir(DATA_DIR, { recursive: true });
       try {
-        console.log("Reading products from:", PRODUCTS_FILE);
-        const productsData = await fs.readFile(PRODUCTS_FILE, "utf-8");
-        const products = JSON.parse(productsData);
-        products.forEach((p) => this.products.set(p.id, p));
-        console.log(`Loaded ${products.length} products`);
+        const productsPathCandidates = [
+          path.join(process.cwd(), "dist", "public", "api", "products.json"),
+          path.join(process.cwd(), "netlify", "functions", "data", "products.json"),
+          PRODUCTS_FILE,
+          path.join(__dirname, "..", "data", "products.json")
+        ];
+        let productsData = null;
+        for (const pPath of productsPathCandidates) {
+          try {
+            if (fsSync.existsSync(pPath)) {
+              console.log("Reading products from:", pPath);
+              productsData = await fs.readFile(pPath, "utf-8");
+              break;
+            }
+          } catch (e) {
+          }
+        }
+        if (!productsData) {
+          console.log("products.json not found in candidates, seeding initial data");
+          await this.seedInitialData();
+        } else {
+          const products = JSON.parse(productsData);
+          products.forEach((p) => this.products.set(p.id, p));
+          console.log(`Loaded ${products.length} products`);
+        }
       } catch (error) {
         console.error("Error loading products:", error);
         await this.seedInitialData();
       }
       try {
-        const categoriesData = await fs.readFile(CATEGORIES_FILE, "utf-8");
-        const categories = JSON.parse(categoriesData);
-        categories.forEach((c) => this.categories.set(c.id, c));
+        const categoriesPathCandidates = [
+          path.join(process.cwd(), "dist", "public", "api", "categories.json"),
+          path.join(process.cwd(), "netlify", "functions", "data", "categories.json"),
+          CATEGORIES_FILE,
+          path.join(__dirname, "..", "data", "categories.json")
+        ];
+        let categoriesData = null;
+        for (const cPath of categoriesPathCandidates) {
+          try {
+            if (fsSync.existsSync(cPath)) {
+              categoriesData = await fs.readFile(cPath, "utf-8");
+              break;
+            }
+          } catch (e) {
+          }
+        }
+        if (categoriesData) {
+          const categories = JSON.parse(categoriesData);
+          categories.forEach((c) => this.categories.set(c.id, c));
+        }
       } catch (error) {
       }
       try {
-        const ordersData = await fs.readFile(ORDERS_FILE, "utf-8");
-        const orders = JSON.parse(ordersData);
-        orders.forEach((o) => this.orders.set(o.id, o));
+        if (fsSync.existsSync(ORDERS_FILE)) {
+          const ordersData = await fs.readFile(ORDERS_FILE, "utf-8");
+          const orders = JSON.parse(ordersData);
+          orders.forEach((o) => this.orders.set(o.id, o));
+        }
       } catch (error) {
       }
       this.initialized = true;
@@ -32889,6 +32928,27 @@ app.use((req, _res, next) => {
   }
 })();
 var handler = (0, import_serverless_http.default)(app);
+try {
+  console.log("Function startup diagnostics:");
+  console.log(" process.cwd():", process.cwd());
+  try {
+    console.log(" __dirname:", __dirname);
+  } catch (e) {
+    console.log(" __dirname not available");
+  }
+  import("fs").then((fsmod) => {
+    const dataDir = `${process.cwd()}/netlify/functions/data`;
+    fsmod.promises.readdir(dataDir).then((files) => {
+      console.log(" netlify/functions/data contents:", files);
+    }).catch(() => {
+      console.log(" netlify/functions/data not found or not readable");
+    });
+  }).catch(() => {
+    console.log(" fs module import failed for diagnostics");
+  });
+} catch (e) {
+  console.error("Diagnostics logging failed:", e);
+}
 export {
   handler
 };
