@@ -6,7 +6,7 @@
   publish = "dist/public"
   
   # Build command - build both client and server
-  command = "npm run build:client"
+  command = "npm run build:netlify"
   
   # Functions directory
   functions = "netlify/functions"
@@ -22,52 +22,12 @@
   publish = "dist/public"
   functions = "netlify/functions"
 
+[functions]
+  external_node_modules = ["express"]
+  node_bundler = "esbuild"
+  
 [[redirects]]
-  # Simple test endpoint
-  from = "/api/test"
-  to = "/.netlify/functions/simple-test"
-  status = 200
-
-[[redirects]]
-  # Handle specific API routes
-  from = "/api/products/best-sellers"
-  to = "/.netlify/functions/best-sellers"
-  status = 200
-
-[[redirects]]
-  # Handle specific API routes
-  from = "/api/products/new-arrivals"
-  to = "/.netlify/functions/express?path=api/products/new-arrivals"
-  status = 200
-
-[[redirects]]
-  # Handle category routes
-  from = "/api/products/category/*"
-  to = "/.netlify/functions/express?path=api/products/category/:splat"
-  status = 200
-
-[[redirects]]
-  # Handle general API routes through main express function
+  force = true
   from = "/api/*"
-  to = "/.netlify/functions/express?path=:splat"
   status = 200
-
-[[redirects]]
-  # Handle client-side routing - must be last
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
-# Headers for security and performance
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-
-[[headers]]
-  for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+  to = "/.netlify/functions/api/:splat"
