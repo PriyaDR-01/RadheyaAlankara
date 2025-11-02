@@ -16,7 +16,7 @@ import React from 'react';
 import { useAuth } from '@/lib/auth';
 import RegisterModal from './RegisterModal';
 import LoginModal from './LoginModal';
-// import LoginModal from './LoginModal';
+import circularLogo from '@/assets/radheyaAlankara-circle.png';
 
 const categories = [
   { name: 'Rings', slug: 'rings' },
@@ -38,8 +38,13 @@ export function Header() {
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between h-20">
           <Link href="/" data-testid="link-home">
-            <span className="flex items-center gap-2 hover-elevate active-elevate-2 rounded-md px-3 py-2 -ml-3 cursor-pointer">
-              <h1 className="font-serif text-2xl font-light tracking-wide">Fine Jewelry</h1>
+            <span className="flex items-center gap-3 hover-elevate active-elevate-2 rounded-md px-3 py-2 -ml-3 cursor-pointer">
+              <img
+                src={circularLogo}
+                alt="Radheya Alankara"
+                className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 lg:w-11 lg:h-11 object-cover rounded-full"
+              />
+              <h1 className="font-serif text-xl sm:text-2xl md:text-2xl lg:text-3xl font-light tracking-wide">Radheya Alankara</h1>
             </span>
           </Link>
 
@@ -132,7 +137,14 @@ export function Header() {
               <SheetContent side="left" className="p-0 w-64">
                 <nav className="flex flex-col gap-2 p-6">
                   <Link href="/" onClick={() => setMobileMenuOpen(false)}>
-                    <span className="font-serif text-xl mb-4">Fine Jewelry</span>
+                    <span className="flex items-center gap-2 font-serif text-lg sm:text-xl mb-4">
+                      <img
+                        src={circularLogo}
+                        alt="Radheya Alankara"
+                        className="w-6 h-6 sm:w-7 sm:h-7 object-cover rounded-full"
+                      />
+                      Radheya Alankara
+                    </span>
                   </Link>
                   <div className="border-b my-2" />
                   <ul className="flex flex-col gap-1">

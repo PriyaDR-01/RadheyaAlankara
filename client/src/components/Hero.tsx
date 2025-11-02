@@ -13,7 +13,7 @@ export function Hero() {
       
       <div className="relative z-10 container mx-auto px-6 text-center md:text-left max-w-2xl">
         <h1 className="font-serif text-5xl md:text-7xl font-light text-white mb-6 leading-tight">
-          Fine Jewelry
+          Radheya Alankara
         </h1>
         <p className="text-lg md:text-xl text-white/90 mb-8 max-w-xl">
           Discover timeless elegance with our exquisite collection of handcrafted rings, earrings, necklaces, and bracelets.

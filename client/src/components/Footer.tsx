@@ -1,12 +1,19 @@
 import { Link } from 'wouter';
+import circularLogo from '@/assets/radheyaAlankara-circle.png';
 
 export default function Footer() {
   return (
     <footer className="py-12 border-t bg-background">
-      <div className="container mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+      <div className="container mx-auto px-6">        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
           <div>
-            <h3 className="font-serif text-xl mb-4">Fine Jewelry</h3>
+            <div className="flex items-center gap-3 mb-4">
+              <img
+                src={circularLogo}
+                alt="Radheya Alankara"
+                className="w-8 h-8 sm:w-9 sm:h-9 object-cover rounded-full"
+              />
+              <h3 className="font-serif text-xl">Radheya Alankara</h3>
+            </div>
             <p className="text-sm text-muted-foreground">
               Exquisite craftsmanship. Timeless elegance. Luxury you can treasure forever.
             </p>
@@ -28,9 +35,8 @@ export default function Footer() {
               <li><Link href="/contact-us" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}><span className="hover:text-foreground cursor-pointer">Contact Us</span></Link></li>
             </ul>
           </div>
-        </div>
-        <div className="text-center text-sm text-muted-foreground pt-8 border-t">
-          © 2025 Fine Jewelry. All rights reserved.
+        </div>        <div className="text-center text-sm text-muted-foreground pt-8 border-t">
+          © 2025 Radheya Alankara. All rights reserved.
         </div>
       </div>
     </footer>
