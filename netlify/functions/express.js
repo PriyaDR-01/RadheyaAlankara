@@ -10,8 +10,6 @@ import { readFileSync } from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-console.log('Function initializing, __dirname:', __dirname);
-
 const app = express();
 
 // Enable CORS
@@ -23,51 +21,38 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Load data synchronously with better error handling
+// Load data synchronously
 let products = [];
 let categories = [];
 let orders = [];
 let users = [];
 
-console.log('Loading data files...');
-
 try {
-  const dataPath = path.join(__dirname, 'data');
-  console.log('Data directory path:', dataPath);
-  
-  const productsData = readFileSync(path.join(dataPath, 'products.json'), 'utf-8');
+  const productsData = readFileSync(path.join(__dirname, 'data', 'products.json'), 'utf-8');
   products = JSON.parse(productsData);
-  console.log('Products loaded:', products.length);
 } catch (error) {
-  console.error('Error loading products:', error.message);
-  products = [];
+  console.error('Error loading products:', error);
 }
 
 try {
   const categoriesData = readFileSync(path.join(__dirname, 'data', 'categories.json'), 'utf-8');
   categories = JSON.parse(categoriesData);
-  console.log('Categories loaded:', categories.length);
 } catch (error) {
-  console.error('Error loading categories:', error.message);
-  categories = [];
+  console.error('Error loading categories:', error);
 }
 
 try {
   const ordersData = readFileSync(path.join(__dirname, 'data', 'orders.json'), 'utf-8');
   orders = JSON.parse(ordersData);
-  console.log('Orders loaded:', orders.length);
 } catch (error) {
-  console.error('Error loading orders:', error.message);
-  orders = [];
+  console.error('Error loading orders:', error);
 }
 
 try {
   const usersData = readFileSync(path.join(__dirname, 'data', 'users.json'), 'utf-8');
   users = JSON.parse(usersData);
-  console.log('Users loaded:', users.length);
 } catch (error) {
-  console.error('Error loading users:', error.message);
-  users = [];
+  console.error('Error loading users:', error);
 }
 
 // API Routes
@@ -194,48 +179,9 @@ app.get('/api/debug', (req, res) => {
   });
 });
 
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error('Express error:', err);
-  res.status(500).json({ 
-    error: 'Internal server error', 
-    message: err.message 
-  });
-});
-
 // Handle 404
-app.use('*', (req, res) => {
-  console.log('404 for path:', req.path);
-  res.status(404).json({ error: 'Endpoint not found', path: req.path });
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ error: 'API endpoint not found' });
 });
 
-const serverlessHandler = serverlessHttp(app);
-
-export const handler = async (event, context) => {
-  try {
-    console.log('Handler called:', {
-      httpMethod: event.httpMethod,
-      path: event.path,
-      query: event.queryStringParameters
-    });
-    
-    const result = await serverlessHandler(event, context);
-    console.log('Handler completed successfully');
-    return result;
-  } catch (error) {
-    console.error('Handler error:', error);
-    return {
-      statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
-      },
-      body: JSON.stringify({ 
-        error: 'Function execution failed', 
-        message: error.message
-      })
-    };
-  }
-};
+export const handler = serverlessHttp(app);

@@ -23,9 +23,15 @@
   functions = "netlify/functions"
 
 [[redirects]]
+  # Simple test endpoint
+  from = "/api/test"
+  to = "/.netlify/functions/simple-test"
+  status = 200
+
+[[redirects]]
   # Handle specific API routes
   from = "/api/products/best-sellers"
-  to = "/.netlify/functions/express?path=api/products/best-sellers"
+  to = "/.netlify/functions/best-sellers"
   status = 200
 
 [[redirects]]
