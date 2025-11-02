@@ -10,7 +10,7 @@ import { readFileSync } from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-console.log('Function starting, __dirname:', __dirname);
+console.log('Function initializing, __dirname:', __dirname);
 
 const app = express();
 
@@ -23,46 +23,51 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error('Express error:', err);
-  res.status(500).json({ error: 'Internal server error', message: err.message });
-});
-
-// Load data synchronously
+// Load data synchronously with better error handling
 let products = [];
 let categories = [];
 let orders = [];
 let users = [];
 
-console.log('Attempting to load data files...');
+console.log('Loading data files...');
 
 try {
-  const productsData = readFileSync(path.join(__dirname, 'data', 'products.json'), 'utf-8');
+  const dataPath = path.join(__dirname, 'data');
+  console.log('Data directory path:', dataPath);
+  
+  const productsData = readFileSync(path.join(dataPath, 'products.json'), 'utf-8');
   products = JSON.parse(productsData);
+  console.log('Products loaded:', products.length);
 } catch (error) {
-  console.error('Error loading products:', error);
+  console.error('Error loading products:', error.message);
+  products = [];
 }
 
 try {
   const categoriesData = readFileSync(path.join(__dirname, 'data', 'categories.json'), 'utf-8');
   categories = JSON.parse(categoriesData);
+  console.log('Categories loaded:', categories.length);
 } catch (error) {
-  console.error('Error loading categories:', error);
+  console.error('Error loading categories:', error.message);
+  categories = [];
 }
 
 try {
   const ordersData = readFileSync(path.join(__dirname, 'data', 'orders.json'), 'utf-8');
   orders = JSON.parse(ordersData);
+  console.log('Orders loaded:', orders.length);
 } catch (error) {
-  console.error('Error loading orders:', error);
+  console.error('Error loading orders:', error.message);
+  orders = [];
 }
 
 try {
   const usersData = readFileSync(path.join(__dirname, 'data', 'users.json'), 'utf-8');
   users = JSON.parse(usersData);
+  console.log('Users loaded:', users.length);
 } catch (error) {
-  console.error('Error loading users:', error);
+  console.error('Error loading users:', error.message);
+  users = [];
 }
 
 // API Routes
@@ -189,42 +194,47 @@ app.get('/api/debug', (req, res) => {
   });
 });
 
-console.log('Data loaded successfully:', {
-  products: products.length,
-  categories: categories.length,
-  orders: orders.length,
-  users: users.length
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Express error:', err);
+  res.status(500).json({ 
+    error: 'Internal server error', 
+    message: err.message 
+  });
 });
 
 // Handle 404
-app.use('/api/*', (req, res) => {
+app.use('*', (req, res) => {
   console.log('404 for path:', req.path);
-  res.status(404).json({ error: 'API endpoint not found' });
+  res.status(404).json({ error: 'Endpoint not found', path: req.path });
 });
 
 const serverlessHandler = serverlessHttp(app);
 
 export const handler = async (event, context) => {
   try {
-    console.log('Handler called with:', {
+    console.log('Handler called:', {
       httpMethod: event.httpMethod,
       path: event.path,
       query: event.queryStringParameters
     });
     
-    return await serverlessHandler(event, context);
+    const result = await serverlessHandler(event, context);
+    console.log('Handler completed successfully');
+    return result;
   } catch (error) {
     console.error('Handler error:', error);
     return {
       statusCode: 500,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
       },
       body: JSON.stringify({ 
         error: 'Function execution failed', 
-        message: error.message,
-        stack: error.stack 
+        message: error.message
       })
     };
   }
