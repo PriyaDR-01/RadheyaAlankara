@@ -12,7 +12,7 @@
   functions = "netlify/functions"
 
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "20"
 
 [dev]
   # Local development settings
@@ -26,6 +26,24 @@
   # Handle API routes through Netlify Functions with path parameter
   from = "/api/*"
   to = "/.netlify/functions/api?path=:splat"
+  status = 200
+
+[[redirects]]
+  # Fallback for direct function access
+  from = "/.netlify/functions/api/*"
+  to = "/.netlify/functions/api?path=:splat"
+  status = 200
+
+[[redirects]]
+  # Direct backup endpoint for products
+  from = "/api/products/direct"
+  to = "/.netlify/functions/products"
+  status = 200
+
+[[redirects]]
+  # Debug endpoint
+  from = "/api/debug"
+  to = "/.netlify/functions/debug"
   status = 200
 
 [[redirects]]

@@ -9,8 +9,23 @@ const __dirname = path.dirname(__filename);
 
 // Simple storage implementation for Netlify Functions
 const getDataPath = (filename: string) => {
-  // In Netlify Functions, data files are in the same directory
-  return path.join(__dirname, 'data', filename);
+  // Try multiple possible data locations for Netlify
+  const possiblePaths = [
+    path.join(__dirname, 'data', filename),
+    path.join(process.cwd(), 'netlify', 'functions', 'data', filename),
+    path.join(process.cwd(), 'data', filename),
+    path.join(__dirname, '..', '..', 'data', filename)
+  ];
+  
+  for (const testPath of possiblePaths) {
+    if (fs.existsSync(testPath)) {
+      console.log(`Found data file at: ${testPath}`);
+      return testPath;
+    }
+  }
+  
+  console.error(`Could not find ${filename} in any of these paths:`, possiblePaths);
+  return possiblePaths[0]; // fallback to first path
 };
 
 const readJsonFile = (filename: string) => {
@@ -21,7 +36,21 @@ const readJsonFile = (filename: string) => {
     // Check if file exists
     if (!fs.existsSync(filePath)) {
       console.error('File does not exist:', filePath);
-      console.log('Available files in directory:', fs.readdirSync(path.dirname(filePath)));
+      console.log('Working directory:', process.cwd());
+      console.log('Function directory:', __dirname);
+      
+      // List available files for debugging
+      const dir = path.dirname(filePath);
+      if (fs.existsSync(dir)) {
+        console.log('Available files in directory:', fs.readdirSync(dir));
+      } else {
+        console.log('Directory does not exist:', dir);
+        // Try to list parent directory
+        const parentDir = path.dirname(dir);
+        if (fs.existsSync(parentDir)) {
+          console.log('Parent directory contents:', fs.readdirSync(parentDir));
+        }
+      }
       return [];
     }
     
@@ -38,7 +67,7 @@ const readJsonFile = (filename: string) => {
 };
 
 export const handler: Handler = async (event, context) => {
-  const { httpMethod, queryStringParameters } = event;
+  const { httpMethod, queryStringParameters, path: eventPath } = event;
   
   // Enable CORS
   const headers = {
@@ -47,6 +76,13 @@ export const handler: Handler = async (event, context) => {
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Content-Type': 'application/json',
   };
+
+  console.log('Netlify Function called:', {
+    httpMethod,
+    queryStringParameters,
+    eventPath,
+    timestamp: new Date().toISOString()
+  });
 
   if (httpMethod === 'OPTIONS') {
     return {
@@ -65,10 +101,29 @@ export const handler: Handler = async (event, context) => {
   }
 
   try {
-    // Get the API path from query parameters
-    const apiPath = '/' + (queryStringParameters?.path || 'products');
+    // Get the API path from query parameters or try to extract from path
+    let apiPath = queryStringParameters?.path || '';
     
-    console.log('API Path:', apiPath);
+    // Fallback: try to extract from the event path if query param is missing
+    if (!apiPath && eventPath) {
+      if (eventPath.includes('/.netlify/functions/api/')) {
+        apiPath = eventPath.split('/.netlify/functions/api/')[1] || '';
+      } else if (eventPath.includes('/api/')) {
+        apiPath = eventPath.split('/api/')[1] || '';
+      }
+    }
+    
+    // Default to products if no path
+    if (!apiPath) {
+      apiPath = 'products';
+    }
+    
+    // Ensure it starts with /
+    if (!apiPath.startsWith('/')) {
+      apiPath = '/' + apiPath;
+    }
+    
+    console.log('Processed API Path:', apiPath);
     console.log('Query parameters:', queryStringParameters);
     
     switch (apiPath) {

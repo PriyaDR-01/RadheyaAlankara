@@ -7,7 +7,20 @@ import { fileURLToPath } from "url";
 var __filename = fileURLToPath(import.meta.url);
 var __dirname = path.dirname(__filename);
 var getDataPath = (filename) => {
-  return path.join(__dirname, "data", filename);
+  const possiblePaths = [
+    path.join(__dirname, "data", filename),
+    path.join(process.cwd(), "netlify", "functions", "data", filename),
+    path.join(process.cwd(), "data", filename),
+    path.join(__dirname, "..", "..", "data", filename)
+  ];
+  for (const testPath of possiblePaths) {
+    if (fs.existsSync(testPath)) {
+      console.log(`Found data file at: ${testPath}`);
+      return testPath;
+    }
+  }
+  console.error(`Could not find ${filename} in any of these paths:`, possiblePaths);
+  return possiblePaths[0];
 };
 var readJsonFile = (filename) => {
   try {
@@ -15,7 +28,18 @@ var readJsonFile = (filename) => {
     console.log("Attempting to read file:", filePath);
     if (!fs.existsSync(filePath)) {
       console.error("File does not exist:", filePath);
-      console.log("Available files in directory:", fs.readdirSync(path.dirname(filePath)));
+      console.log("Working directory:", process.cwd());
+      console.log("Function directory:", __dirname);
+      const dir = path.dirname(filePath);
+      if (fs.existsSync(dir)) {
+        console.log("Available files in directory:", fs.readdirSync(dir));
+      } else {
+        console.log("Directory does not exist:", dir);
+        const parentDir = path.dirname(dir);
+        if (fs.existsSync(parentDir)) {
+          console.log("Parent directory contents:", fs.readdirSync(parentDir));
+        }
+      }
       return [];
     }
     const data = fs.readFileSync(filePath, "utf-8");
@@ -30,13 +54,19 @@ var readJsonFile = (filename) => {
   }
 };
 var handler = async (event, context) => {
-  const { httpMethod, queryStringParameters } = event;
+  const { httpMethod, queryStringParameters, path: eventPath } = event;
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Content-Type": "application/json"
   };
+  console.log("Netlify Function called:", {
+    httpMethod,
+    queryStringParameters,
+    eventPath,
+    timestamp: (/* @__PURE__ */ new Date()).toISOString()
+  });
   if (httpMethod === "OPTIONS") {
     return {
       statusCode: 200,
@@ -52,8 +82,21 @@ var handler = async (event, context) => {
     };
   }
   try {
-    const apiPath = "/" + (queryStringParameters?.path || "products");
-    console.log("API Path:", apiPath);
+    let apiPath = queryStringParameters?.path || "";
+    if (!apiPath && eventPath) {
+      if (eventPath.includes("/.netlify/functions/api/")) {
+        apiPath = eventPath.split("/.netlify/functions/api/")[1] || "";
+      } else if (eventPath.includes("/api/")) {
+        apiPath = eventPath.split("/api/")[1] || "";
+      }
+    }
+    if (!apiPath) {
+      apiPath = "products";
+    }
+    if (!apiPath.startsWith("/")) {
+      apiPath = "/" + apiPath;
+    }
+    console.log("Processed API Path:", apiPath);
     console.log("Query parameters:", queryStringParameters);
     switch (apiPath) {
       case "/products":
