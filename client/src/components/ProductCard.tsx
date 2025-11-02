@@ -78,7 +78,7 @@ export function ProductCard({ product }: ProductCardProps) {
               {product.name}
             </h3>
             <p
-              className="font-accent text-xl md:text-2xl font-semibold text-chart-2"
+              className="font-sans text-xl md:text-2xl font-semibold text-chart-2"
               data-testid={`text-product-price-${product.id}`}
             >
               ₹{parseFloat(product.price).toFixed(2)}

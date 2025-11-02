@@ -117,7 +117,7 @@ export default function ProductDetail() {
                 {product.name}
               </h1>
               
-              <p className="font-accent text-4xl font-semibold text-chart-2" data-testid="text-product-price">
+              <p className="font-sans text-4xl font-semibold text-chart-2" data-testid="text-product-price">
                 ${parseFloat(product.price).toFixed(2)}
               </p>
             </div>
