@@ -12,6 +12,32 @@ async function buildFunctions() {
   // Create netlify/functions directory
   const functionsDir = join(__dirname, 'netlify', 'functions');
   await fs.mkdir(functionsDir, { recursive: true });
+  
+  // Copy data files to functions directory
+  console.log('Copying data files...');
+  const dataDir = join(__dirname, 'data');
+  const functionsDataDir = join(functionsDir, 'data');
+  
+  try {
+    await fs.mkdir(functionsDataDir, { recursive: true });
+    
+    const dataFiles = ['products.json', 'categories.json', 'orders.json', 'users.json'];
+    
+    for (const file of dataFiles) {
+      const sourcePath = join(dataDir, file);
+      const destPath = join(functionsDataDir, file);
+      
+      try {
+        const data = await fs.readFile(sourcePath, 'utf-8');
+        await fs.writeFile(destPath, data);
+        console.log(`✅ Copied ${file}`);
+      } catch (error) {
+        console.warn(`⚠️  Could not copy ${file}:`, error.message);
+      }
+    }
+  } catch (error) {
+    console.error('Error copying data files:', error);
+  }
     // Create express function wrapper for the server
   const expressFunction = `
 import serverlessHttp from 'serverless-http';

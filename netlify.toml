@@ -37,7 +37,7 @@
 [[redirects]]
   # Handle category routes
   from = "/api/products/category/*"
-  to = "/.netlify/functions/category"
+  to = "/.netlify/functions/express?path=:splat"
   status = 200
 
 [[redirects]]
