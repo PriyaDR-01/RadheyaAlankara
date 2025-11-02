@@ -23,7 +23,25 @@
   functions = "netlify/functions"
 
 [[redirects]]
-  # Handle API routes through Netlify Functions
+  # Handle specific API routes
+  from = "/api/products/best-sellers"
+  to = "/.netlify/functions/best-sellers"
+  status = 200
+
+[[redirects]]
+  # Handle specific API routes
+  from = "/api/products/new-arrivals"
+  to = "/.netlify/functions/new-arrivals"
+  status = 200
+
+[[redirects]]
+  # Handle category routes
+  from = "/api/products/category/*"
+  to = "/.netlify/functions/category"
+  status = 200
+
+[[redirects]]
+  # Handle general API routes through main express function
   from = "/api/*"
   to = "/.netlify/functions/express?path=:splat"
   status = 200
