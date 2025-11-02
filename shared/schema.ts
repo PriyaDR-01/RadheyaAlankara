@@ -41,7 +41,8 @@ export const orders = pgTable("orders", {
   paymentMethod: text("payment_method").notNull(),
   paymentStatus: text("payment_status").notNull().default("pending"),
   orderStatus: text("order_status").notNull().default("processing"),
-  upiPaymentIntentId: text("upi_payment_intent_id"),
+  paymentId: text("payment_id"), // For Razorpay payment ID
+  orderId: text("order_id"), // For Razorpay order ID
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

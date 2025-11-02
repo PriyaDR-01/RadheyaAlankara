@@ -34,10 +34,77 @@ const checkoutFormSchema = z.object({
 
 type CheckoutFormData = z.infer<typeof checkoutFormSchema>;
 
+// Add types for Razorpay
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
+interface RazorpayResponse {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
+
+interface RazorpayOrder {
+  id: string;
+  amount: number;
+  currency: string;
+  key: string;
+}
+
+async function createRazorpayOrder(orderData: any): Promise<RazorpayOrder> {
+  try {
+    console.log('Creating Razorpay order with data:', orderData);
+    
+    // First test if API is reachable
+    try {
+      const testResponse = await fetch('/api/test');
+      console.log('API test response status:', testResponse.status);
+      if (!testResponse.ok) {
+        console.error('API test failed, status:', testResponse.status);
+      }
+    } catch (testError) {
+      console.error('API test completely failed:', testError);
+    }
+    
+    const response = await apiRequest('POST', '/api/razorpay/order', orderData);
+    console.log('Response status:', response.status);
+    console.log('Response headers:', response.headers);
+    
+    if (!response.ok) {
+      const responseText = await response.text();
+      console.error('Error response:', responseText);
+      
+      // Check if we got HTML instead of JSON
+      if (responseText.includes('<!DOCTYPE') || responseText.includes('<html>')) {
+        throw new Error('Server returned HTML instead of JSON. This usually means the API route is not found or the server is not running correctly.');
+      }
+      
+      // Try to parse as JSON, fall back to text
+      let error;
+      try {
+        error = JSON.parse(responseText);
+      } catch {
+        error = { message: responseText };
+      }
+      
+      throw new Error(error.message || 'Failed to create order');
+    }
+    
+    const result = await response.json();
+    console.log('Razorpay order created:', result);
+    return result;
+  } catch (error: any) {
+    console.error('createRazorpayOrder error:', error);
+    throw error;
+  }
+}
+
 function CheckoutForm() {
   const [paymentMethod, setPaymentMethod] = useState<'upi' | 'cod'>('upi');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [clientSecret, setClientSecret] = useState<string>('');
   const { items, total, clearCart } = useCart();
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -81,6 +148,122 @@ function CheckoutForm() {
     } finally {
       setIsProcessing(false);
     }
+  };  
+  
+  // UPI submit handler
+  const onSubmitUPI = async (data: CheckoutFormData) => {
+    if (items.length === 0) {
+      toast({ title: 'Cart is empty', description: 'Please add items to your cart before checkout', variant: 'destructive' });
+      return;
+    }
+    
+    setIsProcessing(true);
+    
+    try {
+      // Check if Razorpay is loaded
+      if (!window.Razorpay) {
+        throw new Error('Razorpay SDK not loaded. Please refresh the page and try again.');
+      }
+
+      const orderData = {
+        ...data,
+        items,
+        subtotal: String(total),
+        shipping: String(shippingCost),
+        total: String(finalTotal),
+        paymentMethod: 'upi',
+      };
+      
+      // Create Razorpay order
+      const razorpayOrder = await createRazorpayOrder(orderData);
+
+      const options = {
+        key: razorpayOrder.key,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
+        name: 'Radheya Alankara',
+        description: 'Jewelry Order Payment',
+        order_id: razorpayOrder.id,
+        
+        prefill: {
+          name: data.customerName,
+          email: data.customerEmail,
+          contact: data.customerPhone
+        },
+        
+        theme: { 
+          color: '#F5C518'
+        },
+        
+        handler: async function (response: RazorpayResponse) {
+          try {
+            setIsProcessing(true);
+            const verifyResponse = await apiRequest('POST', '/api/razorpay/verify', {
+              ...orderData,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+
+            if (!verifyResponse.ok) {
+              const error = await verifyResponse.json();
+              throw new Error(error.message || 'Payment verification failed');
+            }
+
+            const result = await verifyResponse.json();
+            clearCart();
+            toast({ title: 'Payment Successful!', description: 'Your order has been placed successfully.' });
+            navigate(`/order-success?orderId=${result.order.id}`);
+          } catch (error: any) {
+            console.error('Payment verification error:', error);
+            toast({ 
+              title: 'Payment Verification Failed', 
+              description: error.message || 'An error occurred during payment verification', 
+              variant: 'destructive' 
+            });
+          } finally {
+            setIsProcessing(false);
+          }
+        },
+        
+        modal: {
+          ondismiss: function() {
+            setIsProcessing(false);
+            toast({ 
+              title: 'Payment Cancelled', 
+              description: 'You have cancelled the payment process.',
+              variant: 'destructive'
+            });
+          }
+        }
+      };
+
+      console.log('🔧 Razorpay configuration:', options);
+      
+      const rzp = new window.Razorpay(options);
+      
+      // Add event listeners
+      rzp.on('payment.failed', function (response: any) {
+        console.error('Razorpay payment failed:', response);
+        setIsProcessing(false);
+        toast({ 
+          title: 'Payment Failed', 
+          description: response.error.description || 'Payment failed. Please try again.',
+          variant: 'destructive'
+        });
+      });
+      
+      console.log('Opening Razorpay payment modal...');
+      rzp.open();
+    } catch (error: any) {
+      console.error('Payment initialization error:', error);
+      toast({ 
+        title: 'Payment Failed', 
+        description: error.message || 'An error occurred during payment initialization', 
+        variant: 'destructive' 
+      });
+      setIsProcessing(false);
+    }
   };
 
   if (items.length === 0) {
@@ -91,7 +274,7 @@ function CheckoutForm() {
       </div>
     );
   }
-  // Main form
+
   return (
     <div className="min-h-screen bg-background py-12">
       <div className="container mx-auto px-6">
@@ -185,7 +368,7 @@ function CheckoutForm() {
                       <h3 className="font-serif text-xl font-normal mb-4">Payment</h3>
                       <RadioGroup value={paymentMethod} onValueChange={(value: 'upi' | 'cod') => setPaymentMethod(value)}>
                         <div className="space-y-3">
-                          <Label htmlFor="upi" className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer hover-elevate'}`} data-testid="radio-payment-upi">
+                          <Label htmlFor="upi" className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer hover-elevate`} data-testid="radio-payment-upi">
                             <RadioGroupItem value="upi" id="upi"/>
                             <div className="flex items-center gap-3 flex-1">
                               <div className="flex gap-2">
@@ -194,12 +377,20 @@ function CheckoutForm() {
                               </div>
                               <div className="flex-1">
                                 <p className="font-medium">UPI, Cards, and More</p>
-                                <p className="text-sm text-muted-foreground">Pay with UPI, credit/debit cards via Stripe</p>
+                                <p className="text-sm text-muted-foreground">Pay with UPI, credit/debit cards via Razorpay</p>
                               </div>
                             </div>
-                          </Label>
-                          {paymentMethod === 'upi' && (
-                            <></>
+                          </Label>                          {paymentMethod === 'upi' && (
+                            <Button 
+                              type="button" 
+                              size="lg" 
+                              className="w-full" 
+                              disabled={isProcessing} 
+                              onClick={form.handleSubmit(onSubmitUPI)} 
+                              data-testid="button-pay-now"
+                            >
+                              {isProcessing ? 'Processing...' : 'Pay Now'}
+                            </Button>
                           )}
                           <Label htmlFor="cod" className="flex items-center gap-4 p-4 border rounded-lg cursor-pointer hover-elevate" data-testid="radio-payment-cod">
                             <RadioGroupItem value="cod" id="cod" />
@@ -233,11 +424,6 @@ function CheckoutForm() {
   );
 }
 
-// --- Main entry remains unchanged ---
-function CheckoutWithStripe() {
-  return <CheckoutForm />;
-}
-
 export default function Checkout() {
-  return <CheckoutWithStripe />;
+  return <CheckoutForm />;
 }

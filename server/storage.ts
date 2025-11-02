@@ -1,4 +1,4 @@
-import { type Product, type InsertProduct, type Category, type InsertCategory, type Order, type InsertOrder } from "@shared/schema";
+import { type Product, type InsertProduct, type Category, type InsertCategory } from "@shared/schema";
 import { randomUUID } from "crypto";
 import fs from "fs/promises";
 import path from "path";
@@ -34,14 +34,14 @@ export interface IStorage {
   createCategory(category: InsertCategory): Promise<Category>;
   
   // Orders
-  createOrder(order: InsertOrder): Promise<Order>;
-  getOrderById(id: string): Promise<Order | undefined>;
+  createOrder(order: any): Promise<any>;
+  getOrderById(id: string): Promise<any>;
 }
 
 export class MemStorage implements IStorage {
   private products: Map<string, Product>;
   private categories: Map<string, Category>;
-  private orders: Map<string, Order>;
+  private orders: Map<string, any>;
   private initialized: boolean = false;
 
   constructor() {
@@ -79,7 +79,7 @@ export class MemStorage implements IStorage {
       // Load orders
       try {
         const ordersData = await fs.readFile(ORDERS_FILE, 'utf-8');
-        const orders: Order[] = JSON.parse(ordersData);
+        const orders: any[] = JSON.parse(ordersData);
         orders.forEach(o => this.orders.set(o.id, o));
       } catch (error) {
         // File doesn't exist yet, will be created on first write
@@ -317,23 +317,40 @@ export class MemStorage implements IStorage {
   }
 
   // Orders
-  async createOrder(insertOrder: InsertOrder): Promise<Order> {
+  async createOrder(orderData: any): Promise<any> {
     await this.init();
-    const id = randomUUID();
-    const order: Order = {
-      ...insertOrder,
+    
+    // If ID is provided, use it (for JSON storage compatibility)
+    const id = orderData.id || randomUUID();
+    
+    const order = {
       id,
-      paymentStatus: 'pending',
-      orderStatus: 'processing',
-      createdAt: new Date(),
-      upiPaymentIntentId: insertOrder.upiPaymentIntentId ?? null,
+      customerName: orderData.customerName,
+      customerEmail: orderData.customerEmail,
+      customerPhone: orderData.customerPhone,
+      shippingAddress: orderData.shippingAddress,
+      city: orderData.city,
+      state: orderData.state,
+      pinCode: orderData.pinCode,
+      items: orderData.items,
+      subtotal: orderData.subtotal,
+      shipping: orderData.shipping,
+      total: orderData.total,
+      paymentMethod: orderData.paymentMethod,
+      paymentStatus: orderData.paymentStatus || 'pending',
+      orderStatus: orderData.orderStatus || 'processing',
+      paymentId: orderData.paymentId || null,
+      orderId: orderData.orderId || null,
+      createdAt: orderData.createdAt || new Date().toISOString(),
     };
+    
     this.orders.set(id, order);
     await this.saveOrders();
+    console.log('Order saved to JSON file:', order);
     return order;
   }
 
-  async getOrderById(id: string): Promise<Order | undefined> {
+  async getOrderById(id: string): Promise<any> {
     await this.init();
     return this.orders.get(id);
   }

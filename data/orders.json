@@ -57,5 +57,61 @@
     "paymentStatus": "pending",
     "orderStatus": "processing",
     "createdAt": "2025-10-22T09:55:59.741Z"
+  },
+  {
+    "id": "ca8c1977-0aef-498f-b615-cd77c39a5f97",
+    "customerName": "Priya",
+    "customerEmail": "priya@gmail.com",
+    "customerPhone": "9901954643",
+    "shippingAddress": "jsdfn",
+    "city": "zsxdcxcfvgb",
+    "state": "xdcfgh",
+    "pinCode": "560058",
+    "items": [
+      {
+        "productId": "e2ee1e30-1d17-4950-b1a1-73e68d5f64cb",
+        "name": "Collar Necklace",
+        "price": 465,
+        "image": "/attached_assets/generated_images/Gold_collar_necklace_ecf1d78f.png",
+        "quantity": 1
+      }
+    ],
+    "subtotal": "465",
+    "shipping": "50",
+    "total": "515",
+    "paymentMethod": "razorpay",
+    "paymentStatus": "completed",
+    "orderStatus": "processing",
+    "paymentId": "pay_RamCe1mtVEeEkS",
+    "orderId": "order_RalzQ9ZUWZA5vi",
+    "createdAt": "2025-11-02T06:42:37.894Z"
+  },
+  {
+    "id": "e53cfa33-a84c-43ab-a931-71eceb1b5919",
+    "customerName": "Priya",
+    "customerEmail": "priya@gmail.com",
+    "customerPhone": "9901954643",
+    "shippingAddress": "jsdfn",
+    "city": "zsxdcxcfvgb",
+    "state": "xdcfgh",
+    "pinCode": "560058",
+    "items": [
+      {
+        "productId": "eeb75d59-cf92-49eb-b38f-72c7d8306a7f",
+        "name": "Pearl Stud Earrings",
+        "price": 125,
+        "image": "/attached_assets/generated_images/Gold_pearl_stud_earrings_b1fe2830.png",
+        "quantity": 1
+      }
+    ],
+    "subtotal": "125",
+    "shipping": "50",
+    "total": "175",
+    "paymentMethod": "cod",
+    "paymentStatus": "pending",
+    "orderStatus": "processing",
+    "paymentId": null,
+    "orderId": null,
+    "createdAt": "2025-11-02T07:10:15.735Z"
   }
 ]
