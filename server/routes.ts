@@ -40,6 +40,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/test", (req, res) => {
     res.json({ message: "Server is running!" });
   });
+
   // Admin authentication middleware
   const adminAuth = (req: any, res: any, next: any) => {
     const authHeader = req.headers.authorization;
@@ -51,6 +52,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     next();
   };
+
+
   // Configure multer for file uploads
   const multerStorage = multer.diskStorage({
     destination: (req, file, cb) => {

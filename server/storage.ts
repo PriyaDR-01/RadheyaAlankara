@@ -233,9 +233,6 @@ export class MemStorage implements IStorage {
       return null;
     }
 
-    console.log(`Deleting product: ${product.name} with ${product.images?.length || 0} images`);
-    console.log('Images to delete:', product.images);
-
     // Delete associated image files from the file system
     if (product.images && product.images.length > 0) {
       for (const imageUrl of product.images) {
@@ -248,22 +245,23 @@ export class MemStorage implements IStorage {
             
             // Determine the correct directory based on the URL path
             if (imageUrl.includes('/attached_assets/products/')) {
-              filePath = path.join(__dirname, '..', 'attached_assets', 'products', filename);
+              filePath = path.join(process.cwd(), 'attached_assets', 'products', filename);
             } else if (imageUrl.includes('/attached_assets/generated_images/')) {
-              filePath = path.join(__dirname, '..', 'attached_assets', 'generated_images', filename);
+              filePath = path.join(process.cwd(), 'attached_assets', 'generated_images', filename);
             } else {
               // For any other subdirectory under attached_assets
               const urlParts = imageUrl.split('/');
               const subdirectory = urlParts[urlParts.length - 2]; // Get the directory name
-              filePath = path.join(__dirname, '..', 'attached_assets', subdirectory, filename);
+              filePath = path.join(process.cwd(), 'attached_assets', subdirectory, filename);
             }
             
             // Check if file exists and delete it
             if (fsSync.existsSync(filePath)) {
-              await fs.unlink(filePath);
-              console.log(`Deleted image file: ${filename} from ${filePath}`);
-            } else {
-              console.log(`Image file not found: ${filePath}`);
+              try {
+                await fs.unlink(filePath);
+              } catch (unlinkError) {
+                console.error(`Failed to delete image file ${filePath}:`, unlinkError);
+              }
             }
           }
         } catch (error) {
