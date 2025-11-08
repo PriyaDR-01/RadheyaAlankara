@@ -1,10 +1,16 @@
 import type { Express } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import multer from 'multer';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Use environment variable for Stripe secret key
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
@@ -27,9 +33,256 @@ const razorpay = new Razorpay({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Serve static files from attached_assets
+  app.use('/attached_assets', express.static(path.join(__dirname, '..', 'attached_assets')));
+
   // Simple test route
   app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working!", timestamp: new Date().toISOString() });
+    res.json({ message: "Server is running!" });
+  });
+  // Admin authentication middleware
+  const adminAuth = (req: any, res: any, next: any) => {
+    const authHeader = req.headers.authorization;
+    const isAdmin = req.headers['x-admin-token'] === 'admin-access' || 
+                    (authHeader && authHeader.includes('admin@radheyaalankara.com'));
+    
+    if (!isAdmin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    next();
+  };
+  // Configure multer for file uploads
+  const multerStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      const uploadPath = path.join(__dirname, '..', 'attached_assets', 'products');
+      // Ensure the directory exists
+      if (!fs.existsSync(uploadPath)) {
+        fs.mkdirSync(uploadPath, { recursive: true });
+      }
+      cb(null, uploadPath);
+    },
+    filename: (req, file, cb) => {
+      // Generate unique filename with original extension
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+    }
+  });
+
+  const upload = multer({ 
+    storage: multerStorage,fileFilter: (req, file, cb) => {
+      // Accept only image files
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(null, false);
+      }
+    },
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB limit
+    }
+  });
+  // Upload image endpoint
+  app.post("/api/admin/upload-image", adminAuth, upload.single('image'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      // Return the file URL that can be used in the frontend
+      const fileUrl = `/attached_assets/products/${req.file.filename}`;
+      
+      res.json({
+        success: true,
+        url: fileUrl,
+        filename: req.file.filename
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      res.status(500).json({ error: 'Failed to upload image' });
+    }
+  });
+
+  // Delete image endpoint
+  app.delete("/api/admin/delete-image", adminAuth, (req, res) => {
+    try {
+      const { imageUrl } = req.body;
+      
+      if (!imageUrl) {
+        return res.status(400).json({ error: 'Image URL is required' });
+      }
+
+      // Extract filename from URL (e.g., "/attached_assets/products/filename.jpg" -> "filename.jpg")
+      const filename = imageUrl.split('/').pop();
+      
+      if (!filename) {
+        return res.status(400).json({ error: 'Invalid image URL' });
+      }
+
+      // Construct the full file path
+      const filePath = path.join(__dirname, '..', 'attached_assets', 'products', filename);
+      
+      // Check if file exists and delete it
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        res.json({ success: true, message: 'Image deleted successfully' });
+      } else {
+        res.status(404).json({ error: 'Image file not found' });
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      res.status(500).json({ error: 'Failed to delete image' });
+    }
+  });
+
+  // Admin - Add new product
+  app.post("/api/admin/products", adminAuth, async (req, res) => {
+    try {
+      const { name, description, price, category, images, isNewArrival, isBestSeller } = req.body;
+      
+      if (!name || !description || !price || !category) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      const slugify = (str: string) =>
+        str
+          .toLowerCase()
+          .replace(/ /g, '-')
+          .replace(/[^\w-]+/g, '');
+
+      const insertProduct = {
+        name: String(name),
+        slug: slugify(String(name)),
+        description: description ? String(description) : null,
+        price: String(price),
+        category: String(category),
+        images: Array.isArray(images) ? images.map(String) : [],
+        stock: 0,
+        isNewArrival: isNewArrival ? 1 : 0,
+        isBestSeller: isBestSeller ? 1 : 0,
+        material: null,
+      };
+
+      // Use storage's createProduct method
+      const newProduct = await storage.createProduct(insertProduct);
+
+      res.json({ success: true, product: newProduct });
+    } catch (error) {
+      console.error('Error adding product:', error);
+      res.status(500).json({ error: 'Failed to add product' });
+    }
+  });
+  // Admin - Update existing product
+  app.put("/api/admin/products/:productId", adminAuth, async (req, res) => {
+    try {
+      const { productId } = req.params;
+      const { name, description, price, category, images, isNewArrival, isBestSeller } = req.body;
+      
+      if (!name || !description || !price || !category) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      const slugify = (str: string) =>
+        str
+          .toLowerCase()
+          .replace(/ /g, '-')
+          .replace(/[^\w-]+/g, '');
+
+      // Prepare update data
+      const updates = {
+        name: String(name),
+        slug: slugify(String(name)),
+        description: description ? String(description) : null,
+        price: String(price),
+        category: String(category),
+        images: Array.isArray(images) ? images.map(String) : [],
+        isNewArrival: isNewArrival ? 1 : 0,
+        isBestSeller: isBestSeller ? 1 : 0,
+      };
+
+      // Use storage method to update product
+      const updatedProduct = await storage.updateProduct(productId, updates);
+
+      if (!updatedProduct) {
+        return res.status(404).json({ error: 'Product not found' });
+      }
+
+      res.json({ success: true, product: updatedProduct });
+    } catch (error) {
+      console.error('Error updating product:', error);
+      res.status(500).json({ error: 'Failed to update product' });
+    }
+  });
+  // Admin - Delete product
+  app.delete("/api/admin/products/:productId", adminAuth, async (req, res) => {
+    try {
+      const { productId } = req.params;
+
+      // Use storage method to delete product
+      const deletedProduct = await storage.deleteProduct(productId);
+
+      if (!deletedProduct) {
+        return res.status(404).json({ error: 'Product not found' });
+      }
+
+      res.json({ success: true, deletedProduct });
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      res.status(500).json({ error: 'Failed to delete product' });
+    }
+  });
+
+  // Admin - Get all orders
+  app.get("/api/admin/orders", adminAuth, async (req, res) => {
+    try {      const orders = await storage.getAllOrders();
+      // Sort by creation date (newest first)
+      const sortedOrders = orders.sort((a: any, b: any) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      res.json(sortedOrders);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      res.status(500).json({ error: 'Failed to fetch orders' });
+    }
+  });
+  // Admin - Update order status
+  app.put("/api/admin/orders/:orderId/status", adminAuth, async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { status, trackingNumber } = req.body;
+
+      if (!status) {
+        return res.status(400).json({ error: 'Status is required' });
+      }
+
+      const validStatuses = ['pending', 'processing', 'shipped', 'delivered'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ error: 'Invalid status' });
+      }
+
+      const orders = await storage.getAllOrders();
+      const orderIndex = orders.findIndex((order: any) => order.id === orderId);
+
+      if (orderIndex === -1) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      // Update order directly in memory and file
+      orders[orderIndex].status = status;
+      if (trackingNumber) {
+        orders[orderIndex].trackingNumber = trackingNumber;
+      }
+      orders[orderIndex].updatedAt = new Date().toISOString();
+
+      // Save to orders.json file directly
+      const ordersPath = path.join(process.cwd(), 'data', 'orders.json');
+      fs.writeFileSync(ordersPath, JSON.stringify(orders, null, 2));
+
+      res.json({ success: true, order: orders[orderIndex] });
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      res.status(500).json({ error: 'Failed to update order status' });
+    }
   });
 
   // Get all products

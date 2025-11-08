@@ -5,5 +5,12 @@
     "email": "priyadr011998@gmail.com",
     "phone": "9901954643",
     "password": "Priya@12345"
+  },
+  {
+    "id": "admin-001",
+    "name": "Admin",
+    "email": "admin@radheyaalankara.com",
+    "phone": "9999999999",
+    "password": "Admin@123"
   }
 ]

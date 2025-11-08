@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRoute, Link } from 'wouter';
 import { Product } from '@shared/schema';
 import { Button } from '@/components/ui/button';
-import { ShoppingBag, ArrowLeft } from 'lucide-react';
+import { ShoppingBag, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCart } from '@/lib/cart';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -12,17 +12,22 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { useState, useEffect } from 'react';
 
 export default function ProductDetail() {
   const [, params] = useRoute('/product/:slug');
   const { addItem, openCart } = useCart();
   const { toast } = useToast();
-
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { data: product, isLoading } = useQuery<Product>({
     queryKey: ['/api/products/slug', params?.slug],
+    queryFn: async () => {
+      const res = await fetch(`/api/products/slug/${params?.slug}`);
+      if (!res.ok) throw new Error('Failed to fetch product');
+      return res.json();
+    },
     enabled: !!params?.slug,
   });
-
   const handleAddToCart = () => {
     if (!product) return;
     
@@ -41,6 +46,48 @@ export default function ProductDetail() {
     openCart();
   };
 
+  const nextImage = () => {
+    if (product && product.images.length > 1) {
+      setCurrentImageIndex((prev) => 
+        prev === product.images.length - 1 ? 0 : prev + 1
+      );
+    }
+  };
+
+  const prevImage = () => {
+    if (product && product.images.length > 1) {
+      setCurrentImageIndex((prev) => 
+        prev === 0 ? product.images.length - 1 : prev - 1
+      );
+    }
+  };
+  const goToImage = (index: number) => {
+    setCurrentImageIndex(index);
+  };
+  // Reset image index when product changes
+  useEffect(() => {
+    setCurrentImageIndex(0);
+  }, [product]);
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (product && product.images.length > 1) {
+        if (e.key === 'ArrowLeft') {
+          setCurrentImageIndex((prev) => 
+            prev === 0 ? product.images.length - 1 : prev - 1
+          );
+        } else if (e.key === 'ArrowRight') {
+          setCurrentImageIndex((prev) => 
+            prev === product.images.length - 1 ? 0 : prev + 1
+          );
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [product]);
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-6 py-12">
@@ -55,7 +102,6 @@ export default function ProductDetail() {
       </div>
     );
   }
-
   if (!product) {
     return (
       <div className="container mx-auto px-6 py-12 text-center">
@@ -66,6 +112,12 @@ export default function ProductDetail() {
       </div>
     );
   }
+  // Debug: Log product images
+  console.log('Product:', product.name);
+  console.log('Images count:', product.images.length);
+  console.log('Images:', product.images);
+  console.log('Current index:', currentImageIndex);
+  console.log('Should show navigation:', product.images.length > 1);
 
   return (
     <div className="min-h-screen">
@@ -77,48 +129,106 @@ export default function ProductDetail() {
           </span>
         </Link>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          {/* Product Images */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">          {/* Product Images with Swiper */}
           <div className="space-y-4">
-            <div className="aspect-square rounded-lg overflow-hidden bg-muted">
-              <img
-                src={product.images[0]}
-                alt={product.name}
-                className="w-full h-full object-cover"
+            <div className="relative aspect-square overflow-hidden rounded-lg bg-muted group">              <img
+                src={product.images[currentImageIndex]}
+                alt={`${product.name} - Image ${currentImageIndex + 1}`}
+                className="w-full h-full object-cover object-center transition-transform duration-300"
                 data-testid="img-product-main"
               />
+                {/* Image Counter */}
+              {product.images.length > 1 && (
+                <div className="absolute top-4 right-4 bg-background/80 text-foreground px-2 py-1 rounded-md text-sm font-medium shadow-sm">
+                  {currentImageIndex + 1} / {product.images.length}
+                </div>
+              )}
+              
+              
+              {/* Badge */}
+              {product.isNewArrival === 1 ? (
+                <Badge className="absolute top-4 left-4 bg-primary text-primary-foreground">
+                  New Arrival
+                </Badge>
+              ) : product.isBestSeller === 1 ? (
+                <Badge className="absolute top-4 left-4 bg-chart-2 text-primary-foreground border-0">
+                  Best Seller
+                </Badge>
+              ) : null}              {/* Navigation Arrows - Always visible if more than 1 image */}
+              {product.images.length > 1 && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white hover:bg-gray-50 border-2 border-gray-300 shadow-lg opacity-100 transition-all z-20 rounded-full"
+                    onClick={prevImage}
+                    data-testid="button-prev-image"
+                  >
+                    <ChevronLeft className="h-5 w-5 text-gray-700" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white hover:bg-gray-50 border-2 border-gray-300 shadow-lg opacity-100 transition-all z-20 rounded-full"
+                    onClick={nextImage}
+                    data-testid="button-next-image"
+                  >
+                    <ChevronRight className="h-5 w-5 text-gray-700" />
+                  </Button>
+                </>
+              )}
+              
+               {/* Image Indicators */}
+              {product.images.length > 1 && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                  {product.images.map((_, index) => (
+                    <button
+                      key={index}
+                      className={`w-3 h-3 rounded-full transition-colors border-2 ${
+                        index === currentImageIndex
+                          ? 'bg-primary border-primary'
+                          : 'bg-background/60 hover:bg-background/80 border-background/60 hover:border-background/80'
+                      }`}
+                      onClick={() => goToImage(index)}
+                      data-testid={`indicator-${index}`}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
+
+            {/* Thumbnail Images - Only show if more than 1 image */}
             {product.images.length > 1 && (
               <div className="grid grid-cols-4 gap-4">
-                {product.images.slice(1, 5).map((image, index) => (
-                  <div key={index} className="aspect-square rounded-md overflow-hidden bg-muted">
+                {product.images.slice(0, 4).map((image, index) => (
+                  <button
+                    key={index}
+                    className={`aspect-square rounded-lg overflow-hidden border-2 transition-colors ${
+                      index === currentImageIndex
+                        ? 'border-primary'
+                        : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
+                    }`}
+                    onClick={() => goToImage(index)}
+                    data-testid={`thumbnail-${index}`}
+                  >
                     <img
                       src={image}
-                      alt={`${product.name} ${index + 2}`}
-                      className="w-full h-full object-cover"
+                      alt={`${product.name} - Thumbnail ${index + 1}`}
+                      className="w-full h-full object-cover object-center"
                     />
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
-          </div>
-
-          {/* Product Info */}
+          </div>          {/* Product Info */}
           <div className="space-y-6">
             <div>
-              {product.isBestSeller === 1 && (
-                <Badge className="mb-3 bg-chart-2 text-primary-foreground border-0">Best Seller</Badge>
-              )}
-              {product.isNewArrival === 1 && (
-                <Badge className="mb-3">New Arrival</Badge>
-              )}
-              
               <h1 className="font-serif text-4xl font-light mb-4" data-testid="text-product-name">
                 {product.name}
               </h1>
               
               <p className="font-sans text-4xl font-semibold text-chart-2" data-testid="text-product-price">
-                ${parseFloat(product.price).toFixed(2)}
+                {parseFloat(product.price).toFixed(2)}
               </p>
             </div>
 

@@ -1,1 +1,32 @@
-[]
+[
+  {
+    "id": "e33e75b1-decb-4b2c-aac9-d5518a5a0be7",
+    "customerName": "Priya",
+    "customerEmail": "priya@gmail.com",
+    "customerPhone": "9901954643",
+    "shippingAddress": "jsdfn",
+    "city": "zsxdcxcfvgb",
+    "state": "xdcfgh",
+    "pinCode": "560058",
+    "items": [
+      {
+        "productId": "7f6c3bbc-f0eb-4e46-82a1-562516427afa",
+        "name": "Diamond Solitaire Ring",
+        "price": 1850,
+        "image": "/attached_assets/generated_images/Diamond_solitaire_ring_54bd7102.png",
+        "quantity": 1
+      }
+    ],
+    "subtotal": "1850",
+    "shipping": "50",
+    "total": "1900",
+    "paymentMethod": "cod",
+    "paymentStatus": "pending",
+    "orderStatus": "processing",
+    "paymentId": null,
+    "orderId": null,
+    "createdAt": "2025-11-08T13:44:18.045Z",
+    "status": "shipped",
+    "updatedAt": "2025-11-08T14:04:20.249Z"
+  }
+]

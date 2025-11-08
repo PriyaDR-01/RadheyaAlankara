@@ -17,6 +17,7 @@ import NotFound from "@/pages/not-found";
 import ShippingReturns from "@/pages/ShippingReturns";
 import CareInstructions from "@/pages/CareInstructions";
 import ContactUs from "@/pages/ContactUs";
+import Admin from "@/pages/Admin";
 
 function Router() {
   return (
@@ -25,10 +26,10 @@ function Router() {
       <Route path="/product/:slug" component={ProductDetail} />
       <Route path="/category/:slug" component={CategoryPage} />
       <Route path="/checkout" component={Checkout} />
-      <Route path="/order-success" component={OrderSuccess} />
-      <Route path="/shipping-returns" component={ShippingReturns} />
+      <Route path="/order-success" component={OrderSuccess} />      <Route path="/shipping-returns" component={ShippingReturns} />
       <Route path="/care-instructions" component={CareInstructions} />
       <Route path="/contact-us" component={ContactUs} />
+      <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>
   );

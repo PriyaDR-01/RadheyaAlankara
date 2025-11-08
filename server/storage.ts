@@ -60,10 +60,18 @@ export interface IStorage {
   getAllCategories(): Promise<Category[]>;
   getCategoryBySlug(slug: string): Promise<Category | undefined>;
   createCategory(category: InsertCategory): Promise<Category>;
-  
-  // Orders
+    // Orders
   createOrder(order: any): Promise<any>;
   getOrderById(id: string): Promise<any>;
+  getAllOrders(): Promise<any[]>;
+    // Product management
+  updateProduct(productId: string, updates: Partial<Product>): Promise<Product | null>;
+  deleteProduct(productId: string): Promise<Product | null>;
+  reloadProducts(): Promise<void>;
+  
+  // User management
+  getAllUsers(): Promise<User[]>;
+  writeUsers(users: User[]): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -176,6 +184,102 @@ export class MemStorage implements IStorage {
   private async saveOrders() {
     const orders = Array.from(this.orders.values());
     await fs.writeFile(ORDERS_FILE, JSON.stringify(orders, null, 2));
+  }
+
+  // Method to reload products from file (for admin updates)
+  async reloadProducts() {
+    try {
+      console.log('Reloading products from file...');
+      if (fsSync.existsSync(PRODUCTS_FILE)) {
+        const productsData = await fs.readFile(PRODUCTS_FILE, 'utf-8');
+        const products: Product[] = JSON.parse(productsData);
+        
+        // Clear existing products and reload
+        this.products.clear();
+        products.forEach(p => this.products.set(p.id, p));
+        
+        console.log(`Reloaded ${products.length} products`);
+      }
+    } catch (error) {
+      console.error('Error reloading products:', error);
+    }
+  }
+
+  // Method to update a product and save to file
+  async updateProduct(productId: string, updates: Partial<Product>): Promise<Product | null> {
+    await this.init();
+    
+    const existingProduct = this.products.get(productId);
+    if (!existingProduct) {
+      return null;
+    }
+
+    // Update the product in memory
+    const updatedProduct = { ...existingProduct, ...updates };
+    this.products.set(productId, updatedProduct);
+    
+    // Save to file
+    await this.saveProducts();
+    
+    return updatedProduct;
+  }
+
+  // Method to delete a product
+  async deleteProduct(productId: string): Promise<Product | null> {
+    await this.init();
+    
+    const product = this.products.get(productId);
+    if (!product) {
+      return null;
+    }
+
+    console.log(`Deleting product: ${product.name} with ${product.images?.length || 0} images`);
+    console.log('Images to delete:', product.images);
+
+    // Delete associated image files from the file system
+    if (product.images && product.images.length > 0) {
+      for (const imageUrl of product.images) {
+        try {
+          // Extract filename from URL (e.g., "/attached_assets/products/filename.jpg" -> "filename.jpg")
+          const filename = imageUrl.split('/').pop();
+          
+          if (filename && imageUrl.includes('/attached_assets/')) {
+            let filePath: string;
+            
+            // Determine the correct directory based on the URL path
+            if (imageUrl.includes('/attached_assets/products/')) {
+              filePath = path.join(__dirname, '..', 'attached_assets', 'products', filename);
+            } else if (imageUrl.includes('/attached_assets/generated_images/')) {
+              filePath = path.join(__dirname, '..', 'attached_assets', 'generated_images', filename);
+            } else {
+              // For any other subdirectory under attached_assets
+              const urlParts = imageUrl.split('/');
+              const subdirectory = urlParts[urlParts.length - 2]; // Get the directory name
+              filePath = path.join(__dirname, '..', 'attached_assets', subdirectory, filename);
+            }
+            
+            // Check if file exists and delete it
+            if (fsSync.existsSync(filePath)) {
+              await fs.unlink(filePath);
+              console.log(`Deleted image file: ${filename} from ${filePath}`);
+            } else {
+              console.log(`Image file not found: ${filePath}`);
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to delete image file ${imageUrl}:`, error);
+          // Continue with deletion even if image file deletion fails
+        }
+      }
+    }
+
+    // Remove from memory
+    this.products.delete(productId);
+    
+    // Save to file
+    await this.saveProducts();
+    
+    return product;
   }
 
   private async seedInitialData() {
@@ -425,6 +529,11 @@ export class MemStorage implements IStorage {
   async getOrderById(id: string): Promise<any> {
     await this.init();
     return this.orders.get(id);
+  }
+
+  async getAllOrders(): Promise<any[]> {
+    await this.init();
+    return Array.from(this.orders.values());
   }
 
   async writeUsers(users: User[]): Promise<void> {

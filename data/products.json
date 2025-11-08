@@ -4,13 +4,14 @@
     "name": "Pearl Stud Earrings",
     "slug": "pearl-stud-earrings",
     "description": "Timeless elegance with lustrous pearls set in 14k gold. These classic studs are perfect for any occasion.",
-    "price": "125.00",
+    "price": "4556",
     "category": "earrings",
     "images": [
-      "/attached_assets/products/earing_01.png"
+      "/attached_assets/products/earing_01.png",
+      "/attached_assets/products/image-1762609319546-391343840.jpeg"
     ],
     "stock": 15,
-    "isBestSeller": 1,
+    "isBestSeller": 0,
     "isNewArrival": 0,
     "material": "14k Gold, Freshwater Pearls"
   },
@@ -37,7 +38,9 @@
     "price": "465.00",
     "category": "necklaces",
     "images": [
-      "/attached_assets/products/fullset_01.png"
+      "/attached_assets/products/fullset_01.png",
+      "/attached_assets/products/necklace_02.png",
+      "/attached_assets/generated_images/Gold_collar_necklace_ecf1d78f.png"
     ],
     "stock": 5,
     "isBestSeller": 1,
@@ -67,7 +70,8 @@
     "price": "1850.00",
     "category": "rings",
     "images": [
-      "/attached_assets/generated_images/Diamond_solitaire_ring_54bd7102.png"
+      "/attached_assets/generated_images/Diamond_solitaire_ring_54bd7102.png",
+      "/attached_assets/generated_images/Textured_gold_band_ring_556baf4d.png"
     ],
     "stock": 3,
     "isBestSeller": 0,
@@ -112,6 +116,8 @@
     "price": "385.00",
     "category": "necklaces",
     "images": [
+      "/attached_assets/products/necklace_02.png",
+      "/attached_assets/products/necklace_02.png",
       "/attached_assets/products/necklace_02.png"
     ],
     "stock": 7,
