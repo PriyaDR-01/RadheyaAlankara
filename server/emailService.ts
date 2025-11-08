@@ -25,6 +25,19 @@ const createTransporter = () => {
       user: EMAIL_USER,
       pass: EMAIL_PASS,
     },
+    // Production-friendly settings
+    connectionTimeout: 60000, // 60 seconds
+    greetingTimeout: 30000,   // 30 seconds
+    socketTimeout: 60000,     // 60 seconds
+    // Retry settings
+    pool: true,
+    maxConnections: 5,
+    maxMessages: 100,
+    // TLS settings for better compatibility
+    tls: {
+      rejectUnauthorized: false,
+      ciphers: 'SSLv3'
+    }
   });
 };
 
@@ -240,52 +253,67 @@ const generateStatusUpdateHTML = (order: any, oldStatus: string, newStatus: stri
 
 // Send order confirmation email
 export const sendOrderConfirmationEmail = async (order: any) => {
-  const transporter = createTransporter();
-  if (!transporter) {
-    console.error('Cannot send email: transporter not configured');
-    return false;
-  }
+  const mailOptions = {
+    from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
+    to: order.customerEmail,
+    subject: `Order Confirmation - ${order.id}`,
+    html: generateOrderConfirmationHTML(order),
+  };
 
-  try {
-    const mailOptions = {
-      from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
-      to: order.customerEmail,
-      subject: `Order Confirmation - ${order.id}`,
-      html: generateOrderConfirmationHTML(order),
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Order confirmation email sent successfully:', info.messageId);
-    return true;
-  } catch (error) {
-    console.error('Error sending order confirmation email:', error);
-    return false;
-  }
+  return await sendEmailWithRetry(mailOptions);
 };
 
 // Send order status update email
 export const sendOrderStatusUpdateEmail = async (order: any, oldStatus: string, newStatus: string, trackingNumber?: string) => {
+  const mailOptions = {
+    from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
+    to: order.customerEmail,
+    subject: `Order Status Update - ${order.id}`,
+    html: generateStatusUpdateHTML(order, oldStatus, newStatus, trackingNumber),
+  };
+
+  return await sendEmailWithRetry(mailOptions);
+};
+
+// Send email with retry logic and fallback
+const sendEmailWithRetry = async (mailOptions: any, maxRetries = 3): Promise<boolean> => {
   const transporter = createTransporter();
   if (!transporter) {
-    console.error('Cannot send email: transporter not configured');
+    console.error('Email transporter not available');
     return false;
   }
 
-  try {
-    const mailOptions = {
-      from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
-      to: order.customerEmail,
-      subject: `Order Status Update - ${order.id}`,
-      html: generateStatusUpdateHTML(order, oldStatus, newStatus, trackingNumber),
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Order status update email sent successfully:', info.messageId);
-    return true;
-  } catch (error) {
-    console.error('Error sending order status update email:', error);
-    return false;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`📧 Sending email attempt ${attempt}/${maxRetries} to ${mailOptions.to}`);
+      await transporter.sendMail(mailOptions);
+      console.log(`✅ Email sent successfully on attempt ${attempt}`);
+      return true;
+    } catch (error: any) {
+      console.error(`❌ Email attempt ${attempt} failed:`, error.message);
+      
+      // If it's a connection timeout or network error, wait and retry
+      if (attempt < maxRetries && (
+        error.code === 'ETIMEDOUT' || 
+        error.code === 'ECONNRESET' || 
+        error.code === 'ENOTFOUND' ||
+        error.code === 'CONN'
+      )) {
+        const waitTime = attempt * 2000; // Wait 2s, 4s, 6s between retries
+        console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        continue;
+      }
+      
+      // If it's the last attempt or a permanent error, fail
+      if (attempt === maxRetries) {
+        console.error(`❌ All ${maxRetries} email attempts failed. Last error:`, error);
+        return false;
+      }
+    }
   }
+  
+  return false;
 };
 
 // Test email configuration
