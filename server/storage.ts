@@ -60,6 +60,8 @@ export interface IStorage {
   getAllCategories(): Promise<Category[]>;
   getCategoryBySlug(slug: string): Promise<Category | undefined>;
   createCategory(category: InsertCategory): Promise<Category>;
+  updateCategory(categoryId: string, updates: Partial<Category>): Promise<Category | null>;
+  deleteCategory(categoryId: string): Promise<Category | null>;
     // Orders
   createOrder(order: any): Promise<any>;
   getOrderById(id: string): Promise<any>;
@@ -487,6 +489,67 @@ export class MemStorage implements IStorage {
     };
     this.categories.set(id, category);
     await this.saveCategories();
+    return category;
+  }
+
+  // Method to update a category and save to file
+  async updateCategory(categoryId: string, updates: Partial<Category>): Promise<Category | null> {
+    await this.init();
+    
+    const existingCategory = this.categories.get(categoryId);
+    if (!existingCategory) {
+      return null;
+    }
+
+    // Update the category in memory
+    const updatedCategory = { ...existingCategory, ...updates };
+    this.categories.set(categoryId, updatedCategory);
+    
+    // Save to file
+    await this.saveCategories();
+    
+    return updatedCategory;
+  }
+
+  // Method to delete a category
+  async deleteCategory(categoryId: string): Promise<Category | null> {
+    await this.init();
+    
+    const category = this.categories.get(categoryId);
+    if (!category) {
+      return null;
+    }
+
+    // Delete associated image file from the file system
+    if (category.image) {
+      try {
+        // Extract filename from URL (e.g., "/attached_assets/categories/filename.jpg" -> "filename.jpg")
+        const filename = category.image.split('/').pop();
+        
+        if (filename && category.image.includes('/attached_assets/categories/')) {
+          const filePath = path.join(process.cwd(), 'attached_assets', 'categories', filename);
+          
+          // Check if file exists and delete it
+          if (fsSync.existsSync(filePath)) {
+            try {
+              await fs.unlink(filePath);
+            } catch (unlinkError) {
+              console.error(`Failed to delete category image file ${filePath}:`, unlinkError);
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to delete category image file ${category.image}:`, error);
+        // Continue with deletion even if image file deletion fails
+      }
+    }
+
+    // Remove from memory
+    this.categories.delete(categoryId);
+    
+    // Save to file
+    await this.saveCategories();
+    
     return category;
   }
 

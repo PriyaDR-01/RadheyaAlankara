@@ -235,6 +235,151 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Category image upload endpoint
+  const categoryUpload = multer({ 
+    storage: multer.diskStorage({
+      destination: (req, file, cb) => {
+        const uploadPath = path.join(__dirname, '..', 'attached_assets', 'categories');
+        // Ensure the directory exists
+        if (!fs.existsSync(uploadPath)) {
+          fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+      },
+      filename: (req, file, cb) => {
+        // Generate unique filename with original extension
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname);
+        cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+      }
+    }),
+    fileFilter: (req, file, cb) => {
+      // Accept only image files
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(null, false);
+      }
+    },
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB limit
+    }
+  });
+
+  // Upload category image endpoint
+  app.post("/api/admin/upload-category-image", adminAuth, categoryUpload.single('image'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      // Return the file URL that can be used in the frontend
+      const fileUrl = `/attached_assets/categories/${req.file.filename}`;
+      
+      res.json({
+        success: true,
+        url: fileUrl,
+        filename: req.file.filename
+      });
+    } catch (error) {
+      console.error('Category image upload error:', error);
+      res.status(500).json({ error: 'Failed to upload category image' });
+    }
+  });
+
+  // Admin - Get all categories
+  app.get("/api/admin/categories", adminAuth, async (req, res) => {
+    try {
+      const categories = await storage.getAllCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      res.status(500).json({ error: 'Failed to fetch categories' });
+    }
+  });
+
+  // Admin - Add new category
+  app.post("/api/admin/categories", adminAuth, async (req, res) => {
+    try {
+      const { name, description, image } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: 'Category name is required' });
+      }
+
+      const slugify = (str: string) =>
+        str
+          .toLowerCase()
+          .replace(/ /g, '-')
+          .replace(/[^\w-]+/g, '');
+
+      const insertCategory = {
+        name: String(name),
+        slug: slugify(String(name)),
+        description: description ? String(description) : null,
+        image: image ? String(image) : null,
+      };
+
+      // Use storage's createCategory method
+      const newCategory = await storage.createCategory(insertCategory);
+
+      res.json({ success: true, category: newCategory });
+    } catch (error) {
+      console.error('Error adding category:', error);
+      res.status(500).json({ error: 'Failed to add category' });
+    }
+  });
+
+  // Admin - Update existing category
+  app.put("/api/admin/categories/:categoryId", adminAuth, async (req, res) => {
+    try {
+      const { categoryId } = req.params;
+      const { name, description, image } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: 'Category name is required' });
+      }
+
+      // Prepare update data
+      const updates = {
+        name: String(name),
+        description: description ? String(description) : null,
+        image: image ? String(image) : null,
+      };
+
+      // Use storage method to update category
+      const updatedCategory = await storage.updateCategory(categoryId, updates);
+
+      if (!updatedCategory) {
+        return res.status(404).json({ error: 'Category not found' });
+      }
+
+      res.json({ success: true, category: updatedCategory });
+    } catch (error) {
+      console.error('Error updating category:', error);
+      res.status(500).json({ error: 'Failed to update category' });
+    }
+  });
+
+  // Admin - Delete category
+  app.delete("/api/admin/categories/:categoryId", adminAuth, async (req, res) => {
+    try {
+      const { categoryId } = req.params;
+
+      // Use storage method to delete category
+      const deletedCategory = await storage.deleteCategory(categoryId);
+
+      if (!deletedCategory) {
+        return res.status(404).json({ error: 'Category not found' });
+      }
+
+      res.json({ success: true, deletedCategory });
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      res.status(500).json({ error: 'Failed to delete category' });
+    }
+  });
+
   // Admin - Get all orders
   app.get("/api/admin/orders", adminAuth, async (req, res) => {
     try {      const orders = await storage.getAllOrders();

@@ -25,13 +25,8 @@ import { useAuth } from '@/lib/auth';
 import RegisterModal from './RegisterModal';
 import LoginModal from './LoginModal';
 import circularLogo from '@/assets/radheyaAlankara-circle.png';
-
-const categories = [
-  { name: 'Rings', slug: 'rings' },
-  { name: 'Earrings', slug: 'earrings' },
-  { name: 'Necklaces', slug: 'necklaces' },
-  { name: 'Bracelets', slug: 'bracelets' },
-];
+import { useQuery } from '@tanstack/react-query';
+import { Category } from '@shared/schema';
 
 export function Header() {
   const { itemCount, openCart } = useCart();
@@ -40,6 +35,11 @@ export function Header() {
   const { user, logout } = useAuth();
   const [showRegister, setShowRegister] = React.useState(false);
   const [showLogin, setShowLogin] = React.useState(false);
+
+  // Fetch categories dynamically
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ['/api/categories'],
+  });
 
   return (
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">

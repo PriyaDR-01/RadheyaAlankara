@@ -39,6 +39,7 @@ import {
     FilterList,
 } from '@mui/icons-material';
 import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface Category {
     id: string;
@@ -64,6 +65,7 @@ interface Product {
 
 export function ProductManagement() {
     const { toast } = useToast();
+    const queryClient = useQueryClient();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
@@ -290,6 +292,11 @@ export function ProductManagement() {
                 setIsAddDialogOpen(false);
                 setIsEditDialogOpen(false);
                 refreshProducts();
+                
+                // Invalidate product queries to refresh all components
+                queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+                queryClient.invalidateQueries({ queryKey: ['/api/products/category'] });
+                queryClient.invalidateQueries({ queryKey: ['/api/products/best-sellers'] });
             } else {
                 throw new Error(`Failed to ${isEdit ? 'update' : 'add'} product`);
             }
@@ -334,6 +341,11 @@ export function ProductManagement() {
                     description: successMessage,
                 });
                 refreshProducts();
+                
+                // Invalidate product queries to refresh all components
+                queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+                queryClient.invalidateQueries({ queryKey: ['/api/products/category'] });
+                queryClient.invalidateQueries({ queryKey: ['/api/products/best-sellers'] });
             } else {
                 throw new Error('Failed to delete product');
             }

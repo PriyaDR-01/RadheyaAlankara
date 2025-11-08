@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRoute } from 'wouter';
-import { Product } from '@shared/schema';
+import { Product, Category } from '@shared/schema';
 import { ProductCard } from '@/components/ProductCard';
 
 export default function CategoryPage() {
@@ -9,6 +9,11 @@ export default function CategoryPage() {
   const { data: products, isLoading } = useQuery<Product[]>({
     queryKey: ['/api/products/category', params?.slug],
     enabled: !!params?.slug,
+  });
+
+  // Fetch all categories to get the correct category info
+  const { data: categories } = useQuery<Category[]>({
+    queryKey: ['/api/categories'],
   });
 
   const categoryTitles: Record<string, { title: string; subtitle: string }> = {
@@ -21,9 +26,31 @@ export default function CategoryPage() {
     all: { title: 'All Jewelry', subtitle: 'Browse our complete collection' },
   };
 
-  const categoryInfo = params?.slug 
-    ? categoryTitles[params.slug] || { title: 'Products', subtitle: 'Explore our collection' }
-    : { title: 'Products', subtitle: 'Explore our collection' };
+  // Get category info from API data or fallback to hardcoded titles
+  const getCategoryInfo = () => {
+    if (!params?.slug) {
+      return { title: 'Products', subtitle: 'Explore our collection' };
+    }
+
+    // First check hardcoded titles for special categories
+    if (categoryTitles[params.slug]) {
+      return categoryTitles[params.slug];
+    }
+
+    // Then check dynamic categories from API
+    const category = categories?.find(c => c.slug === params.slug);
+    if (category) {
+      return {
+        title: category.name,
+        subtitle: category.description || 'Explore our collection'
+      };
+    }
+
+    // Fallback
+    return { title: 'Products', subtitle: 'Explore our collection' };
+  };
+
+  const categoryInfo = getCategoryInfo();
 
   return (
     <div className="min-h-screen">
