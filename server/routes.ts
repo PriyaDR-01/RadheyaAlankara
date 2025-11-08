@@ -480,30 +480,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Invalid status' });
       }
 
-      const orders = await storage.getAllOrders();
-      const orderIndex = orders.findIndex((order: any) => order.id === orderId);
+      // Use storage method to update order status
+      const result = await storage.updateOrderStatus(orderId, status, trackingNumber);
 
-      if (orderIndex === -1) {
+      if (!result) {
         return res.status(404).json({ error: 'Order not found' });
       }
 
-      const oldStatus = orders[orderIndex].status;
-      
-      // Update order directly in memory and file
-      orders[orderIndex].status = status;
-      if (trackingNumber) {
-        orders[orderIndex].trackingNumber = trackingNumber;
-      }
-      orders[orderIndex].updatedAt = new Date().toISOString();
-
-      // Save to orders.json file directly
-      const ordersPath = path.join(process.cwd(), 'data', 'orders.json');
-      fs.writeFileSync(ordersPath, JSON.stringify(orders, null, 2));
+      const { oldStatus, ...updatedOrder } = result;
 
       // Send status update email if status changed
       if (oldStatus !== status) {
         try {
-          await sendOrderStatusUpdateEmail(orders[orderIndex], oldStatus, status, trackingNumber);
+          await sendOrderStatusUpdateEmail(updatedOrder, oldStatus, status, trackingNumber);
           console.log(`✅ Order status update email sent for order ${orderId}: ${oldStatus} → ${status}`);
         } catch (error) {
           console.error('❌ Failed to send order status update email:', error);
@@ -511,10 +500,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json({ success: true, order: orders[orderIndex] });
+      res.json({ success: true, order: updatedOrder });
     } catch (error) {
       console.error('Error updating order status:', error);
       res.status(500).json({ error: 'Failed to update order status' });
+    }
+  });
+
+  // Admin - Delete order
+  app.delete("/api/admin/orders/:orderId", adminAuth, async (req, res) => {
+    try {
+      const { orderId } = req.params;
+
+      // Use storage method to delete order
+      const deletedOrder = await storage.deleteOrder(orderId);
+
+      if (!deletedOrder) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      console.log(`✅ Order ${orderId} deleted successfully`);
+      res.json({ success: true, deletedOrder });
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      res.status(500).json({ error: 'Failed to delete order' });
     }
   });
 

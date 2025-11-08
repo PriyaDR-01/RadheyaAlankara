@@ -66,6 +66,8 @@ export interface IStorage {
   createOrder(order: any): Promise<any>;
   getOrderById(id: string): Promise<any>;
   getAllOrders(): Promise<any[]>;
+  deleteOrder(orderId: string): Promise<any | null>;
+  updateOrderStatus(orderId: string, status: string, trackingNumber?: string): Promise<any | null>;
     // Product management
   updateProduct(productId: string, updates: Partial<Product>): Promise<Product | null>;
   deleteProduct(productId: string): Promise<Product | null>;
@@ -595,6 +597,45 @@ export class MemStorage implements IStorage {
   async getAllOrders(): Promise<any[]> {
     await this.init();
     return Array.from(this.orders.values());
+  }
+
+  async deleteOrder(orderId: string): Promise<any | null> {
+    await this.init();
+    
+    const order = this.orders.get(orderId);
+    if (!order) {
+      return null;
+    }
+
+    // Remove from memory
+    this.orders.delete(orderId);
+    
+    // Save to file
+    await this.saveOrders();
+    
+    return order;
+  }
+
+  async updateOrderStatus(orderId: string, status: string, trackingNumber?: string): Promise<any | null> {
+    await this.init();
+    
+    const order = this.orders.get(orderId);
+    if (!order) {
+      return null;
+    }
+
+    // Update order in memory
+    const oldStatus = order.orderStatus;
+    order.orderStatus = status;
+    if (trackingNumber) {
+      order.trackingNumber = trackingNumber;
+    }
+    order.updatedAt = new Date().toISOString();
+
+    // Save to file
+    await this.saveOrders();
+    
+    return { ...order, oldStatus };
   }
 
   async writeUsers(users: User[]): Promise<void> {

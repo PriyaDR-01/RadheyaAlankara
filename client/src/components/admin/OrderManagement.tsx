@@ -40,8 +40,10 @@ import {
   Close,
   Search,
   FilterList,
+  Delete,
 } from '@mui/icons-material';
 import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ShippingAddress {
   street: string;
@@ -79,6 +81,7 @@ const orderStatuses = [
 
 export function OrderManagement() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
@@ -253,6 +256,43 @@ export function OrderManagement() {
     setStatusUpdate(order.status || order.orderStatus || 'pending');
     setTrackingNumber(order.trackingNumber || '');
     setIsDialogOpen(true);
+  };
+
+  const handleDeleteOrder = async (order: Order) => {
+    const confirmMessage = `Are you sure you want to delete order #${order.id.slice(-6)}?\n\nCustomer: ${order.customerName}\nTotal: ${formatCurrency(order.total)}\n\nThis action cannot be undone.`;
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/orders/${order.id}`, {
+        method: 'DELETE',
+        headers: {
+          'x-admin-token': 'admin-access',
+        },
+      });
+
+      if (response.ok) {
+        toast({
+          title: 'Success!',
+          description: `Order #${order.id.slice(-6)} has been deleted successfully.`,
+        });
+        fetchOrders(); // Refresh the orders list
+        
+        // Invalidate orders queries to refresh all components
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/orders'] });
+      } else {
+        throw new Error('Failed to delete order');
+      }
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete order. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -450,14 +490,27 @@ export function OrderManagement() {
                     </TableCell>
                   )}
                   <TableCell>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<Visibility />}
-                      onClick={() => handleViewOrder(order)}
-                    >
-                      View
-                    </Button>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => handleViewOrder(order)}
+                        sx={{ minWidth: 'auto', padding: '8px' }}
+                        title="View Order"
+                      >
+                        <Visibility />
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        size="small"
+                        onClick={() => handleDeleteOrder(order)}
+                        sx={{ minWidth: 'auto', padding: '8px' }}
+                        title="Delete Order"
+                      >
+                        <Delete />
+                      </Button>
+                    </Box>
                   </TableCell>
                 </TableRow>
               ))
