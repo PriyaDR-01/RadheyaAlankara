@@ -26,7 +26,35 @@
     "paymentId": null,
     "orderId": null,
     "createdAt": "2025-11-08T13:44:18.045Z",
-    "status": "shipped",
-    "updatedAt": "2025-11-08T14:04:20.249Z"
+    "status": "delivered",
+    "updatedAt": "2025-11-08T15:53:25.701Z"
+  },
+  {
+    "id": "72dd5c87-078f-4c6f-ac83-500a70ad1113",
+    "customerName": "Priya",
+    "customerEmail": "priya@gmail.com",
+    "customerPhone": "9901954643",
+    "shippingAddress": "#13 15th cross thigalarapalya main road peenya 2nd stage",
+    "city": "Bangalore",
+    "state": "Karnataka",
+    "pinCode": "560058",
+    "items": [
+      {
+        "productId": "6e9b4577-45b0-44d8-b6e3-a2b77e20dc2a",
+        "name": "Wave Bangle",
+        "price": 285,
+        "image": "/attached_assets/generated_images/Gold_wave_bangle_bracelet_8bbe3a36.png",
+        "quantity": 1
+      }
+    ],
+    "subtotal": "285",
+    "shipping": "50",
+    "total": "335",
+    "paymentMethod": "razorpay",
+    "paymentStatus": "completed",
+    "orderStatus": "processing",
+    "paymentId": "pay_RdIltVSovVcJaB",
+    "orderId": "order_RdIju9EKRDmMSJ",
+    "createdAt": "2025-11-08T15:52:03.742Z"
   }
 ]

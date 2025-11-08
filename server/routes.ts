@@ -8,6 +8,7 @@ import path from 'path';
 import crypto from 'crypto';
 import multer from 'multer';
 import { fileURLToPath } from 'url';
+import { sendOrderConfirmationEmail, sendOrderStatusUpdateEmail } from './emailService';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -52,6 +53,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     next();
   };
+
+  // Test email configuration endpoint (admin only)
+  app.post("/api/admin/test-email", adminAuth, async (req, res) => {
+    try {
+      const { testEmailConfiguration } = await import('./emailService');
+      const isConfigured = await testEmailConfiguration();
+      
+      if (isConfigured) {
+        res.json({ success: true, message: 'Email configuration is valid' });
+      } else {
+        res.status(500).json({ success: false, message: 'Email configuration is invalid' });
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Failed to test email configuration', error: String(error) });
+    }
+  });
+
+  // Send test order confirmation email (admin only)
+  app.post("/api/admin/send-test-email", adminAuth, async (req, res) => {
+    try {
+      const { email, orderId } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ error: 'Email address is required' });
+      }
+
+      // Find order by ID or use a sample order
+      let order;
+      if (orderId) {
+        order = await storage.getOrderById(orderId);
+        if (!order) {
+          return res.status(404).json({ error: 'Order not found' });
+        }
+      } else {
+        // Create a sample order for testing
+        order = {
+          id: 'TEST-' + Date.now(),
+          customerName: 'Test Customer',
+          customerEmail: email,
+          customerPhone: '+91 98765 43210',
+          shippingAddress: '123 Test Street',
+          city: 'Test City',
+          state: 'Test State',
+          pinCode: '123456',
+          items: [{
+            name: 'Test Jewelry Item',
+            price: 1000,
+            quantity: 1,
+            image: '/attached_assets/products/sample.jpg'
+          }],
+          subtotal: 1000,
+          shipping: 100,
+          total: 1100,
+          paymentStatus: 'completed',
+          orderStatus: 'processing',
+          createdAt: new Date().toISOString()
+        };
+      }
+
+      const success = await sendOrderConfirmationEmail(order);
+      
+      if (success) {
+        res.json({ success: true, message: `Test email sent successfully to ${email}` });
+      } else {
+        res.status(500).json({ success: false, message: 'Failed to send test email' });
+      }
+    } catch (error) {
+      console.error('Test email error:', error);
+      res.status(500).json({ success: false, message: 'Failed to send test email', error: String(error) });
+    }
+  });
 
 
   // Configure multer for file uploads
@@ -415,6 +487,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Order not found' });
       }
 
+      const oldStatus = orders[orderIndex].status;
+      
       // Update order directly in memory and file
       orders[orderIndex].status = status;
       if (trackingNumber) {
@@ -425,6 +499,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Save to orders.json file directly
       const ordersPath = path.join(process.cwd(), 'data', 'orders.json');
       fs.writeFileSync(ordersPath, JSON.stringify(orders, null, 2));
+
+      // Send status update email if status changed
+      if (oldStatus !== status) {
+        try {
+          await sendOrderStatusUpdateEmail(orders[orderIndex], oldStatus, status, trackingNumber);
+          console.log(`✅ Order status update email sent for order ${orderId}: ${oldStatus} → ${status}`);
+        } catch (error) {
+          console.error('❌ Failed to send order status update email:', error);
+          // Don't fail the status update if email fails
+        }
+      }
 
       res.json({ success: true, order: orders[orderIndex] });
     } catch (error) {
@@ -582,6 +667,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create order in JSON file storage ONLY after payment verification
       const order = await storage.createOrder(finalOrderData);
       console.log('✅ Order successfully created in database after payment verification:', order.id);
+      
+      // Send order confirmation email
+      try {
+        await sendOrderConfirmationEmail(order);
+        console.log('✅ Order confirmation email sent successfully');
+      } catch (error) {
+        console.error('❌ Failed to send order confirmation email:', error);
+        // Don't fail the order creation if email fails
+      }
       
       res.json({
         success: true,
