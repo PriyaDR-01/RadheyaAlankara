@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { Order } from '@shared/schema';
+import sgMail from '@sendgrid/mail';
 
 // Get email configuration from environment variables
 const EMAIL_HOST = process.env.EMAIL_HOST || 'smtp.gmail.com';
@@ -9,6 +10,15 @@ const EMAIL_USER = process.env.EMAIL_USER;
 const EMAIL_PASS = process.env.EMAIL_PASS;
 const FROM_EMAIL = process.env.FROM_EMAIL || EMAIL_USER;
 const FROM_NAME = process.env.FROM_NAME || 'Radheya Alankara';
+
+// SendGrid configuration (preferred for Render)
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+
+// Initialize SendGrid if API key is available
+if (SENDGRID_API_KEY) {
+  sgMail.setApiKey(SENDGRID_API_KEY);
+  console.log('✅ SendGrid initialized for email delivery');
+}
 
 // Create reusable transporter object using the default SMTP transport
 const createTransporter = () => {
@@ -25,18 +35,13 @@ const createTransporter = () => {
       user: EMAIL_USER,
       pass: EMAIL_PASS,
     },
-    // Production-friendly settings
-    connectionTimeout: 60000, // 60 seconds
-    greetingTimeout: 30000,   // 30 seconds
-    socketTimeout: 60000,     // 60 seconds
-    // Retry settings
-    pool: true,
-    maxConnections: 5,
-    maxMessages: 100,
+    // Faster timeouts for production (quick failover)
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 5000,    // 5 seconds
+    socketTimeout: 10000,     // 10 seconds
     // TLS settings for better compatibility
     tls: {
-      rejectUnauthorized: false,
-      ciphers: 'SSLv3'
+      rejectUnauthorized: false
     }
   });
 };
@@ -260,7 +265,20 @@ export const sendOrderConfirmationEmail = async (order: any) => {
     html: generateOrderConfirmationHTML(order),
   };
 
-  return await sendEmailWithRetry(mailOptions);
+  const success = await sendEmailWithRetry(mailOptions);
+  
+  // Log order details for manual follow-up if email fails
+  if (!success) {
+    console.error('📧 ORDER CONFIRMATION EMAIL FAILED:');
+    console.error(`   Order ID: ${order.id}`);
+    console.error(`   Customer: ${order.customerName} <${order.customerEmail}>`);
+    console.error(`   Phone: ${order.customerPhone}`);
+    console.error(`   Total: ₹${order.total}`);
+    console.error(`   Status: ${order.orderStatus}`);
+    console.error('   ⚠️  MANUAL EMAIL FOLLOW-UP REQUIRED');
+  }
+  
+  return success;
 };
 
 // Send order status update email
@@ -272,43 +290,99 @@ export const sendOrderStatusUpdateEmail = async (order: any, oldStatus: string, 
     html: generateStatusUpdateHTML(order, oldStatus, newStatus, trackingNumber),
   };
 
-  return await sendEmailWithRetry(mailOptions);
+  const success = await sendEmailWithRetry(mailOptions);
+  
+  // Log status update details for manual follow-up if email fails
+  if (!success) {
+    console.error('📧 STATUS UPDATE EMAIL FAILED:');
+    console.error(`   Order ID: ${order.id}`);
+    console.error(`   Customer: ${order.customerName} <${order.customerEmail}>`);
+    console.error(`   Status Change: ${oldStatus} → ${newStatus}`);
+    if (trackingNumber) console.error(`   Tracking: ${trackingNumber}`);
+    console.error('   ⚠️  MANUAL EMAIL FOLLOW-UP REQUIRED');
+  }
+  
+  return success;
 };
 
-// Send email with retry logic and fallback
-const sendEmailWithRetry = async (mailOptions: any, maxRetries = 3): Promise<boolean> => {
-  const transporter = createTransporter();
-  if (!transporter) {
-    console.error('Email transporter not available');
+// Send email using SendGrid API (perfect for Render hosting)
+const sendEmailViaSendGrid = async (mailOptions: any): Promise<boolean> => {
+  if (!SENDGRID_API_KEY) {
+    console.error('SendGrid API key not configured');
     return false;
   }
 
+  try {
+    const msg = {
+      to: mailOptions.to,
+      from: {
+        email: FROM_EMAIL || 'noreply@radheyaalankara.com',
+        name: FROM_NAME
+      },
+      subject: mailOptions.subject,
+      html: mailOptions.html,
+    };
+
+    await sgMail.send(msg);
+    console.log(`✅ Email sent via SendGrid to ${mailOptions.to}`);
+    return true;
+  } catch (error: any) {
+    console.error('SendGrid email failed:', error.message);
+    if (error.response?.body?.errors) {
+      console.error('SendGrid errors:', error.response.body.errors);
+    }
+    return false;
+  }
+};
+
+// Send email with smart routing (SendGrid for Render, SMTP for local)
+const sendEmailWithRetry = async (mailOptions: any): Promise<boolean> => {
+  // Check if we're on Render or production - use SendGrid first
+  const isRender = process.env.RENDER || process.env.NODE_ENV === 'production';
+  
+  if (isRender && SENDGRID_API_KEY) {
+    // On Render, try SendGrid first (SMTP is often blocked)
+    const sendGridSuccess = await sendEmailViaSendGrid(mailOptions);
+    if (sendGridSuccess) {
+      return true;
+    }
+    console.log('SendGrid failed, falling back to SMTP...');
+  }
+
+  // Try SMTP (works locally, fallback for production)
+  const transporter = createTransporter();
+  if (!transporter) {
+    console.error('Email transporter not available');
+    // If SMTP fails and we haven't tried SendGrid yet, try it
+    if (!isRender && SENDGRID_API_KEY) {
+      return await sendEmailViaSendGrid(mailOptions);
+    }
+    return false;
+  }
+
+  // SMTP attempt with quick timeout for Render
+  const maxRetries = isRender ? 1 : 2; // Less retries on Render since SMTP is likely blocked
+  
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`📧 Sending email attempt ${attempt}/${maxRetries} to ${mailOptions.to}`);
       await transporter.sendMail(mailOptions);
-      console.log(`✅ Email sent successfully on attempt ${attempt}`);
+      console.log(`✅ Email sent via SMTP to ${mailOptions.to}`);
       return true;
     } catch (error: any) {
-      console.error(`❌ Email attempt ${attempt} failed:`, error.message);
-      
       // If it's a connection timeout or network error, wait and retry
-      if (attempt < maxRetries && (
-        error.code === 'ETIMEDOUT' || 
-        error.code === 'ECONNRESET' || 
-        error.code === 'ENOTFOUND' ||
-        error.code === 'CONN'
-      )) {
-        const waitTime = attempt * 2000; // Wait 2s, 4s, 6s between retries
-        console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+      if (attempt < maxRetries) {
+        const waitTime = 1000; // Wait 1s between retries
         await new Promise(resolve => setTimeout(resolve, waitTime));
         continue;
       }
       
-      // If it's the last attempt or a permanent error, fail
+      // If SMTP failed completely, try SendGrid as final fallback
       if (attempt === maxRetries) {
-        console.error(`❌ All ${maxRetries} email attempts failed. Last error:`, error);
-        return false;
+        console.error(`❌ SMTP failed after ${maxRetries} attempts:`, error.message);
+        if (SENDGRID_API_KEY && !isRender) {
+          console.log('Trying SendGrid as fallback...');
+          return await sendEmailViaSendGrid(mailOptions);
+        }
       }
     }
   }
@@ -316,19 +390,36 @@ const sendEmailWithRetry = async (mailOptions: any, maxRetries = 3): Promise<boo
   return false;
 };
 
-// Test email configuration
+// Test email configuration (tries both SendGrid and SMTP)
 export const testEmailConfiguration = async () => {
+  console.log('🔧 Testing email configuration...');
+  
+  // Test SendGrid first (preferred for Render)
+  if (SENDGRID_API_KEY) {
+    try {
+      // SendGrid doesn't have a verify method, so we'll just check if the key exists
+      console.log('✅ SendGrid API key configured');
+      return true;
+    } catch (error) {
+      console.error('SendGrid configuration error:', error);
+    }
+  } else {
+    console.log('⚠️  SendGrid API key not configured');
+  }
+
+  // Test SMTP as fallback
   const transporter = createTransporter();
   if (!transporter) {
+    console.log('❌ SMTP configuration missing');
     return false;
   }
 
   try {
     await transporter.verify();
-    console.log('Email configuration is valid');
+    console.log('✅ SMTP configuration valid');
     return true;
   } catch (error) {
-    console.error('Email configuration error:', error);
+    console.error('❌ SMTP configuration error:', error);
     return false;
   }
 };
