@@ -76,6 +76,9 @@ export interface IStorage {
   // User management
   getAllUsers(): Promise<User[]>;
   writeUsers(users: User[]): Promise<void>;
+  
+  // Stock management
+  validateAndReduceStock(orderItems: any[]): Promise<{ success: boolean; message?: string; outOfStockItems?: any[] }>;
 }
 
 export class MemStorage implements IStorage {
@@ -649,6 +652,63 @@ export class MemStorage implements IStorage {
       const usersData = await fs.readFile(USERS_FILE, 'utf-8');
        console.log('Reading users from storage',usersData);
       return JSON.parse(usersData);
+  }
+
+  // Stock management
+  async validateAndReduceStock(orderItems: any[]): Promise<{ success: boolean; message?: string; outOfStockItems?: any[] }> {
+    await this.init();
+    
+    const outOfStockItems: any[] = [];
+    const validationErrors: string[] = [];
+    
+    // First, validate all items have sufficient stock
+    for (const item of orderItems) {
+      const product = this.products.get(item.productId);
+      
+      if (!product) {
+        validationErrors.push(`Product not found: ${item.name || item.productId}`);
+        continue;
+      }
+      
+      if (product.stock < item.quantity) {
+        outOfStockItems.push({
+          productId: item.productId,
+          name: item.name || product.name,
+          requestedQuantity: item.quantity,
+          availableStock: product.stock
+        });
+        validationErrors.push(`Insufficient stock for ${product.name}. Requested: ${item.quantity}, Available: ${product.stock}`);
+      }
+    }
+    
+    // If any validation errors, return without reducing stock
+    if (validationErrors.length > 0) {
+      return {
+        success: false,
+        message: validationErrors.join('; '),
+        outOfStockItems
+      };
+    }
+    
+    // All items have sufficient stock, now reduce the stock
+    for (const item of orderItems) {
+      const product = this.products.get(item.productId);
+      
+      if (product) {
+        const updatedProduct = {
+          ...product,
+          stock: product.stock - item.quantity
+        };
+        
+        this.products.set(item.productId, updatedProduct);
+        console.log(`✅ Reduced stock for ${product.name}: ${product.stock} → ${updatedProduct.stock} (quantity ordered: ${item.quantity})`);
+      }
+    }
+    
+    // Save the updated products to file
+    await this.saveProducts();
+    
+    return { success: true };
   }
 }
 

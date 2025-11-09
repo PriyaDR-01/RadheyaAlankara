@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useCart } from '@/lib/cart';
+import { useStockSync } from '@/hooks/use-stock-sync';
 import { OrderSummary } from '@/components/OrderSummary';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,9 +49,13 @@ interface RazorpayResponse {
 }
 
 export default function CheckoutPage() {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
   const { items, total, clearCart } = useCart();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { syncNow } = useStockSync();
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'razorpay'>('cod');
   const [loading, setLoading] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
@@ -171,6 +176,10 @@ export default function CheckoutPage() {
 
       const result = await response.json();
       clearCart();
+      
+      // Immediately sync stock data to reflect the reduced inventory
+      syncNow();
+      
       toast({
         title: 'Payment Successful!',
         description: `Order #${result.order.id} has been created.`,
@@ -220,6 +229,10 @@ export default function CheckoutPage() {
       const order = await response.json();
       
       clearCart();
+      
+      // Immediately sync stock data to reflect the reduced inventory
+      syncNow();
+      
       toast({
         title: 'Order Placed Successfully!',
         description: `Order #${order.id} has been created.`,

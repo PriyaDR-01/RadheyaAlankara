@@ -2,8 +2,13 @@ import { useQuery } from '@tanstack/react-query';
 import { useRoute } from 'wouter';
 import { Product, Category } from '@shared/schema';
 import { ProductCard } from '@/components/ProductCard';
+import { useEffect } from 'react';
 
 export default function CategoryPage() {
+  
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
   const [, params] = useRoute('/category/:slug');
   
   const { data: products, isLoading } = useQuery<Product[]>({

@@ -83,6 +83,7 @@ export function ProductManagement() {
         price: '',
         category: '',
         images: [] as string[],
+        stock: '',
         isNewArrival: false,
         isBestSeller: false,
     });
@@ -150,6 +151,7 @@ export function ProductManagement() {
             price: '',
             category: '',
             images: [],
+            stock: '',
             isNewArrival: false,
             isBestSeller: false,
         });
@@ -168,6 +170,10 @@ export function ProductManagement() {
 
     const handleDescriptionChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData(prev => ({ ...prev, description: e.target.value }));
+    }, []);
+
+    const handleStockChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData(prev => ({ ...prev, stock: e.target.value }));
     }, []);
 
     const handleCategoryChange = useCallback((e: any) => {
@@ -248,6 +254,7 @@ export function ProductManagement() {
             price: product.price.toString(),
             category: product.category,
             images: product.images || [],
+            stock: product.stock?.toString() || '0',
             isNewArrival: product.isNewArrival === 1,
             isBestSeller: product.isBestSeller === 1,
         });
@@ -263,6 +270,7 @@ export function ProductManagement() {
             const productData = {
                 ...formData,
                 price: parseFloat(formData.price) || 0,
+                stock: parseInt(formData.stock) || 0,
                 images: formData.images,
                 isNewArrival: formData.isNewArrival ? 1 : 0,
                 isBestSeller: formData.isBestSeller ? 1 : 0,
@@ -561,6 +569,9 @@ export function ProductManagement() {
                             <TableCell sx={{ minWidth: 80 }}>
                                 <Typography variant="subtitle2">Price</Typography>
                             </TableCell>
+                            <TableCell sx={{ minWidth: 80 }}>
+                                <Typography variant="subtitle2">Stock</Typography>
+                            </TableCell>
                             <TableCell sx={{ minWidth: { xs: 80, sm: 120 } }}>
                                 <Typography variant="subtitle2">Badges</Typography>
                             </TableCell>
@@ -577,7 +588,7 @@ export function ProductManagement() {
                     <TableBody>
                         {paginatedProducts.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={isMobile ? 4 : 6} align="center" sx={{ py: 8 }}>
+                                <TableCell colSpan={isMobile ? 5 : 7} align="center" sx={{ py: 8 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         {filteredProducts.length === 0 ? 'No products match your filters' : 'No products found'}
                                     </Typography>
@@ -633,6 +644,23 @@ export function ProductManagement() {
                                         <Typography variant="body2" fontWeight="medium">
                                             {formatCurrency(product.price)}
                                         </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Typography 
+                                                variant="body2" 
+                                                fontWeight="medium"
+                                                color={product.stock === 0 ? 'error.main' : product.stock < 5 ? 'warning.main' : 'text.primary'}
+                                            >
+                                                {product.stock || 0}
+                                            </Typography>
+                                            {product.stock === 0 && (
+                                                <Chip label="OUT OF STOCK" size="small" color="error" />
+                                            )}
+                                            {product.stock > 0 && product.stock < 5 && (
+                                                <Chip label="LOW STOCK" size="small" color="warning" />
+                                            )}
+                                        </Box>
                                     </TableCell>
                                     <TableCell>
                                         <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
@@ -737,6 +765,21 @@ export function ProductManagement() {
                                     InputProps={{
                                         startAdornment: <InputAdornment position="start">₹</InputAdornment>,
                                     }}
+                                />
+
+                                <TextField
+                                    fullWidth
+                                    label="Stock Quantity"
+                                    type="number"
+                                    value={formData.stock}
+                                    onChange={handleStockChange}
+                                    placeholder="0"
+                                    required
+                                    variant="outlined"
+                                    InputProps={{
+                                        inputProps: { min: 0 }
+                                    }}
+                                    helperText="Enter the number of items available in stock"
                                 />
 
                                 <FormControl fullWidth required>
@@ -956,6 +999,21 @@ export function ProductManagement() {
                                     InputProps={{
                                         startAdornment: <InputAdornment position="start">₹</InputAdornment>,
                                     }}
+                                />
+
+                                <TextField
+                                    fullWidth
+                                    label="Stock Quantity"
+                                    type="number"
+                                    value={formData.stock}
+                                    onChange={handleStockChange}
+                                    placeholder="0"
+                                    required
+                                    variant="outlined"
+                                    InputProps={{
+                                        inputProps: { min: 0 }
+                                    }}
+                                    helperText="Enter the number of items available in stock"
                                 />
 
                                 <FormControl fullWidth required>

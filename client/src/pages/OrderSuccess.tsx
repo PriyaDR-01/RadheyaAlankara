@@ -11,6 +11,9 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 
 export default function OrderSuccess() {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
   const [location] = useLocation();
   const { clearCart } = useCart();
   const { toast } = useToast();

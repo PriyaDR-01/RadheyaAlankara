@@ -213,7 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin - Add new product
   app.post("/api/admin/products", adminAuth, async (req, res) => {
     try {
-      const { name, description, price, category, images, isNewArrival, isBestSeller } = req.body;
+      const { name, description, price, category, images, stock, isNewArrival, isBestSeller } = req.body;
       
       if (!name || !description || !price || !category) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -232,7 +232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         price: String(price),
         category: String(category),
         images: Array.isArray(images) ? images.map(String) : [],
-        stock: 0,
+        stock: parseInt(String(stock)) || 0,
         isNewArrival: isNewArrival ? 1 : 0,
         isBestSeller: isBestSeller ? 1 : 0,
         material: null,
@@ -251,7 +251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/admin/products/:productId", adminAuth, async (req, res) => {
     try {
       const { productId } = req.params;
-      const { name, description, price, category, images, isNewArrival, isBestSeller } = req.body;
+      const { name, description, price, category, images, stock, isNewArrival, isBestSeller } = req.body;
       
       if (!name || !description || !price || !category) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -271,6 +271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         price: String(price),
         category: String(category),
         images: Array.isArray(images) ? images.map(String) : [],
+        stock: parseInt(String(stock)) || 0,
         isNewArrival: isNewArrival ? 1 : 0,
         isBestSeller: isBestSeller ? 1 : 0,
       };
@@ -570,6 +571,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check stock for specific product
+  app.get("/api/products/:productId/stock", async (req, res) => {
+    try {
+      const product = await storage.getProductById(req.params.productId);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      res.json({ 
+        productId: product.id, 
+        stock: product.stock,
+        available: product.stock > 0
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Force refresh all products (for after order completion)
+  app.post("/api/products/refresh", async (req, res) => {
+    try {
+      await storage.reloadProducts();
+      const products = await storage.getAllProducts();
+      console.log('📦 Products refreshed - current stock levels updated');
+      res.json({ 
+        success: true, 
+        message: 'Products refreshed successfully',
+        totalProducts: products.length
+      });
+    } catch (error: any) {
+      console.error('Error refreshing products:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Get all categories
   app.get("/api/categories", async (req, res) => {
     try {
@@ -651,7 +686,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('💰 Payment ID:', razorpay_payment_id);
       console.log('📋 Order ID:', razorpay_order_id);
 
-      // NOW create the order in the database since payment is verified
+      // Validate stock availability before creating order
+      const stockValidationResult = await storage.validateAndReduceStock(orderData.items);
+      
+      if (!stockValidationResult.success) {
+        console.error('❌ Stock validation failed:', stockValidationResult.message);
+        return res.status(400).json({ 
+          message: "Stock validation failed: " + stockValidationResult.message,
+          outOfStockItems: stockValidationResult.outOfStockItems
+        });
+      }
+
+      // NOW create the order in the database since payment is verified and stock is available
       const finalOrderData = {
         id: uuidv4(),
         customerName: orderData.customerName,
@@ -673,9 +719,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdAt: new Date().toISOString(),
       };
 
-      // Create order in JSON file storage ONLY after payment verification
+      // Create order in JSON file storage ONLY after payment verification and stock validation
       const order = await storage.createOrder(finalOrderData);
       console.log('✅ Order successfully created in database after payment verification:', order.id);
+      console.log('📦 Stock reduced for', orderData.items.length, 'items');
       
       // Send order confirmation email
       try {
@@ -816,6 +863,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Creating order with data:', req.body);
       
+      // Validate stock availability before creating order
+      const stockValidationResult = await storage.validateAndReduceStock(req.body.items);
+      
+      if (!stockValidationResult.success) {
+        console.error('❌ Stock validation failed:', stockValidationResult.message);
+        return res.status(400).json({ 
+          message: "Stock validation failed: " + stockValidationResult.message,
+          outOfStockItems: stockValidationResult.outOfStockItems
+        });
+      }
+      
       // Create order data with proper structure for JSON storage
       const orderData = {
         id: uuidv4(),
@@ -839,7 +897,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const order = await storage.createOrder(orderData);
-      console.log('Order created successfully:', order);
+      console.log('✅ Order created successfully:', order);
+      console.log('📦 Stock reduced for', req.body.items.length, 'items');
+      
+      // Send order confirmation email
+      try {
+        await sendOrderConfirmationEmail(order);
+        console.log('✅ Order confirmation email sent successfully');
+      } catch (error) {
+        console.error('❌ Failed to send order confirmation email:', error);
+        // Don't fail the order creation if email fails
+      }
+      
       res.json(order);
     } catch (error: any) {
       console.error('Order creation error:', error);

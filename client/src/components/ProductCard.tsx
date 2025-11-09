@@ -15,19 +15,39 @@ export function ProductCard({ product }: ProductCardProps) {
   const { addItem, openCart } = useCart();
   const { toast } = useToast();
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
-    addItem({
+    
+    // Check if product is out of stock based on current data
+    if (product.stock === 0) {
+      toast({
+        title: 'Out of Stock',
+        description: `${product.name} is currently out of stock.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    const success = await addItem({
       productId: product.id,
       name: product.name,
       price: parseFloat(product.price),
       image: product.images[0],
     });
-    toast({
-      title: 'Added to cart',
-      description: `${product.name} has been added to your cart.`,
-    });
-    openCart();
+    
+    if (success) {
+      toast({
+        title: 'Added to cart',
+        description: `${product.name} has been added to your cart.`,
+      });
+      openCart();
+    } else {
+      toast({
+        title: 'Cannot add to cart',
+        description: `${product.name} is out of stock or insufficient stock available. Stock may have changed recently.`,
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -62,6 +82,7 @@ export function ProductCard({ product }: ProductCardProps) {
               <Button
                 size="icon"
                 onClick={handleAddToCart}
+                disabled={product.stock === 0}
                 className="transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300"
                 data-testid={`button-add-to-cart-${product.id}`}
               >
@@ -77,12 +98,23 @@ export function ProductCard({ product }: ProductCardProps) {
             >
               {product.name}
             </h3>
-            <p
-              className="font-sans text-xl md:text-2xl font-semibold text-chart-2"
-              data-testid={`text-product-price-${product.id}`}
-            >
-              ₹{parseFloat(product.price).toFixed(2)}
-            </p>
+            <div className="flex items-end justify-between">
+              <p
+                className="font-sans text-xl md:text-2xl font-semibold text-chart-2"
+                data-testid={`text-product-price-${product.id}`}
+              >
+                ₹{parseFloat(product.price).toFixed(2)}
+              </p>
+              {product.stock === 0 ? (
+                <Badge variant="destructive" className="text-xs">
+                  Out of Stock
+                </Badge>
+              ) : product.stock < 5 ? (
+                <Badge variant="secondary" className="text-xs">
+                  Only {product.stock} left
+                </Badge>
+              ) : null}
+            </div>
           </div>
         </Card>
       </div>

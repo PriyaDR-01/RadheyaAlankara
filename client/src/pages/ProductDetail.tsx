@@ -15,6 +15,9 @@ import {
 import { useState, useEffect } from 'react';
 
 export default function ProductDetail() {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
   const [, params] = useRoute('/product/:slug');
   const { addItem, openCart } = useCart();
   const { toast } = useToast();
@@ -28,22 +31,39 @@ export default function ProductDetail() {
     },
     enabled: !!params?.slug,
   });
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!product) return;
     
-    addItem({
+    // Check if product is out of stock
+    if (product.stock === 0) {
+      toast({
+        title: 'Out of Stock',
+        description: `${product.name} is currently out of stock.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    const success = await addItem({
       productId: product.id,
       name: product.name,
       price: parseFloat(product.price),
       image: product.images[0],
     });
     
-    toast({
-      title: 'Added to cart',
-      description: `${product.name} has been added to your cart.`,
-    });
-    
-    openCart();
+    if (success) {
+      toast({
+        title: 'Added to cart',
+        description: `${product.name} has been added to your cart.`,
+      });
+      openCart();
+    } else {
+      toast({
+        title: 'Cannot add to cart',
+        description: `${product.name} is out of stock or insufficient stock available.`,
+        variant: 'destructive',
+      });
+    }
   };
 
   const nextImage = () => {
@@ -243,18 +263,39 @@ export default function ProductDetail() {
                 size="lg"
                 className="flex-1"
                 onClick={handleAddToCart}
+                disabled={product.stock === 0}
                 data-testid="button-add-to-cart"
               >
                 <ShoppingBag className="h-5 w-5 mr-2" />
-                Add to Cart
+                {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
               </Button>
             </div>
 
-            {product.stock !== undefined && product.stock > 0 && product.stock < 10 && (
-              <p className="text-sm text-muted-foreground">
-                Only {product.stock} left in stock
-              </p>
-            )}
+            {/* Stock Status */}
+            <div className="space-y-2">
+              {product.stock === 0 ? (
+                <div className="flex items-center gap-2">
+                  <Badge variant="destructive">Out of Stock</Badge>
+                  <p className="text-sm text-muted-foreground">
+                    This item is currently unavailable
+                  </p>
+                </div>
+              ) : product.stock < 10 ? (
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">Low Stock</Badge>
+                  <p className="text-sm text-muted-foreground">
+                    Only {product.stock} left in stock
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">In Stock</Badge>
+                  <p className="text-sm text-muted-foreground">
+                    Available ({product.stock} items)
+                  </p>
+                </div>
+              )}
+            </div>
 
             <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="details">

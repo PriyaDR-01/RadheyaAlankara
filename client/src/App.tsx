@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/lib/cart";
 import { AuthProvider } from "@/lib/auth";
+import { useStockSync } from "@/hooks/use-stock-sync";
 import { Header } from "@/components/Header";
 import { ShoppingCart } from "@/components/ShoppingCart";
 import Footer from "./components/Footer";
@@ -35,20 +36,29 @@ function Router() {
   );
 }
 
+function AppContent() {
+  // Enable stock synchronization across the app
+  useStockSync(30000); // Sync every 30 seconds
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <main className="flex-1">
+        <Router />
+      </main>
+      <Footer />
+      <ShoppingCart />
+    </div>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <CartProvider>
           <AuthProvider>
-            <div className="min-h-screen flex flex-col">
-              <Header />
-              <main className="flex-1">
-                <Router />
-              </main>
-              <Footer />
-              <ShoppingCart />
-            </div>
+            <AppContent />
           </AuthProvider>
           <Toaster />
         </CartProvider>

@@ -1,6 +1,7 @@
 import { X, Minus, Plus, ShoppingBag } from 'lucide-react';
 import { Link } from 'wouter';
 import { useCart } from '@/lib/cart';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -12,7 +13,20 @@ import {
 import { Separator } from '@/components/ui/separator';
 
 export function ShoppingCart() {
-  const { items, removeItem, updateQuantity, total, isOpen, closeCart } = useCart();
+  const { items, removeItem, updateQuantity, total, isOpen, closeCart, getProductStock } = useCart();
+  const { toast } = useToast();
+
+  const handleQuantityChange = async (productId: string, newQuantity: number, itemName: string) => {
+    const success = await updateQuantity(productId, newQuantity);
+    
+    if (!success && newQuantity > 0) {
+      toast({
+        title: 'Insufficient Stock',
+        description: `Cannot update ${itemName}. Not enough stock available.`,
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <Sheet open={isOpen} onOpenChange={closeCart}>
@@ -33,63 +47,74 @@ export function ShoppingCart() {
         ) : (
           <>
             <div className="flex-1 overflow-y-auto py-6 space-y-6">
-              {items.map((item) => (
-                <div key={item.productId} className="flex gap-4" data-testid={`cart-item-${item.productId}`}>
-                  <div className="w-24 h-24 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                      data-testid={`img-cart-item-${item.productId}`}
-                    />
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between gap-2 mb-2">
-                      <h4 className="font-serif text-base line-clamp-1" data-testid={`text-cart-item-name-${item.productId}`}>
-                        {item.name}
-                      </h4>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 flex-shrink-0"
-                        onClick={() => removeItem(item.productId)}
-                        data-testid={`button-remove-${item.productId}`}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+              {items.map((item) => {
+                const rawStock = getProductStock ? getProductStock(item.productId) : 0;
+                const stock = typeof rawStock === 'number' ? rawStock : 0;
+                const isOutOfStock = stock === 0;
+                return (
+                  <div key={item.productId} className="flex gap-4" data-testid={`cart-item-${item.productId}`}>
+                    <div className="w-24 h-24 rounded-md overflow-hidden bg-muted flex-shrink-0">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        data-testid={`img-cart-item-${item.productId}`}
+                      />
                     </div>
-                    
-                    <p className="font-accent text-lg font-semibold text-chart-2 mb-3" data-testid={`text-cart-item-price-${item.productId}`}>
-                      {item.price.toFixed(2)}
-                    </p>
-                    
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                        data-testid={`button-decrease-${item.productId}`}
-                      >
-                        <Minus className="h-3 w-3" />
-                      </Button>
-                      <span className="w-12 text-center font-medium" data-testid={`text-quantity-${item.productId}`}>
-                        {item.quantity}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                        data-testid={`button-increase-${item.productId}`}
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between gap-2 mb-2">
+                        <h4 className="font-serif text-base line-clamp-1" data-testid={`text-cart-item-name-${item.productId}`}>
+                          {item.name}
+                        </h4>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 flex-shrink-0"
+                          onClick={() => removeItem(item.productId)}
+                          data-testid={`button-remove-${item.productId}`}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="font-accent text-lg font-semibold text-chart-2 mb-3" data-testid={`text-cart-item-price-${item.productId}`}>
+                        {item.price.toFixed(2)}
+                      </p>
+                      <div className="mb-2">
+                        {isOutOfStock ? (
+                          <span className="text-red-500 font-semibold">Out of Stock</span>
+                        ) : (
+                          <span className="text-muted-foreground">Stock: {stock}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handleQuantityChange(item.productId, item.quantity - 1, item.name)}
+                          data-testid={`button-decrease-${item.productId}`}
+                          disabled={item.quantity <= 1}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="w-12 text-center font-medium" data-testid={`text-quantity-${item.productId}`}>
+                          {item.quantity}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handleQuantityChange(item.productId, item.quantity + 1, item.name)}
+                          data-testid={`button-increase-${item.productId}`}
+                          disabled={item.quantity >= stock || isOutOfStock}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="border-t pt-6 space-y-4">
