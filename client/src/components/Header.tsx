@@ -101,7 +101,8 @@ export function Header() {
               <span className="text-sm hover-elevate active-elevate-2 rounded-md px-3 py-2 cursor-pointer" data-testid="link-new-arrivals">
                 New Arrivals
               </span>
-            </Link>          </nav>
+            </Link>          
+          </nav>
           
           <div className="flex items-center gap-0 xs:gap-1 sm:gap-2 flex-shrink-0">
             {user ? (
@@ -118,7 +119,8 @@ export function Header() {
                       <p className="text-xs leading-none text-muted-foreground">
                         {user.email}
                       </p>
-                    </div>                  </DropdownMenuLabel>
+                    </div>                  
+                  </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {user.email === 'admin@radheyaalankara.com' && (
                     <Link href="/admin">

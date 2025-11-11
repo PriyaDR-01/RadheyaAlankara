@@ -4,7 +4,8 @@ import circularLogo from '@/assets/radheyaAlankara-circle.png';
 export default function Footer() {
   return (
     <footer className="py-12 border-t bg-background">
-      <div className="container mx-auto px-6">        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+      <div className="container mx-auto px-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mb-8 justify-center">
           <div>
             <div className="flex items-center gap-3 mb-4">
               <img
@@ -18,6 +19,7 @@ export default function Footer() {
               Exquisite craftsmanship. Timeless elegance. Luxury you can treasure forever.
             </p>
           </div>
+          {/*
           <div>
             <h4 className="font-semibold mb-4">Shop</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
@@ -27,15 +29,17 @@ export default function Footer() {
               <li><Link href="/category/bracelets" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}><span className="hover:text-foreground cursor-pointer">Bracelets</span></Link></li>
             </ul>
           </div>
+          */}
           <div>
-            <h4 className="font-semibold mb-4">Customer Care</h4>
+            <h4 className="font-semibold justify-center mb-4">Customer Care</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/shipping-returns" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}><span className="hover:text-foreground cursor-pointer">Shipping & Returns</span></Link></li>
               <li><Link href="/care-instructions" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}><span className="hover:text-foreground cursor-pointer">Care Instructions</span></Link></li>
               <li><Link href="/contact-us" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}><span className="hover:text-foreground cursor-pointer">Contact Us</span></Link></li>
             </ul>
           </div>
-        </div>        <div className="text-center text-sm text-muted-foreground pt-8 border-t">
+        </div>
+        <div className="text-center text-sm text-muted-foreground pt-8 border-t">
           © 2025 Radheya Alankara. All rights reserved.
         </div>
       </div>

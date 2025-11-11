@@ -1,3 +1,13 @@
+@keyframes scroll-banner {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+.animate-scroll-banner {
+  display: inline-block;
+  min-width: 100%;
+  animation: scroll-banner 25s linear infinite;
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

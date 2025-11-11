@@ -18,8 +18,8 @@ const categoryImages: Record<string, string> = {
 };
 
 export default function Home() {
-  const { data: bestSellers, isLoading: loadingBestSellers } = useQuery<Product[]>({
-    queryKey: ['/api/products/best-sellers'],
+  const { data: newarrivals, isLoading: loadingNewArrivals } = useQuery<Product[]>({
+    queryKey: ['/api/products/category/new-arrivals'],
   });
 
   const { data: categories, isLoading: loadingCategories } = useQuery<Category[]>({
@@ -28,36 +28,48 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
+  
       <Hero />
 
-      {/* Best Sellers Section */}
-      <section className="py-20 container mx-auto px-6">
-        <div className="flex justify-between items-center mb-12">
-          <div>
-            <h2 className="font-serif text-4xl font-light mb-2">Best Sellers</h2>
-            <p className="text-muted-foreground">Our most loved pieces</p>
-          </div>
-          <Link href="/category/best-sellers">
-            <Button variant="outline" data-testid="button-view-all-bestsellers">
-              Shop All
-            </Button>
-          </Link>
+      {/* Moving Banner (CSS Animation) */}
+      <div className="w-full bg-gradient-to-r from-yellow-100 via-pink-100 to-purple-100 py-2 border-b border-yellow-300 overflow-hidden">
+        <div className="whitespace-nowrap animate-scroll-banner text-lg font-semibold text-pink-700">
+          <span className="mx-8">🎉 Free Shipping on All Orders!</span>
+          <span className="mx-8">Shop the Latest Festive Collection</span>
+          <span className="mx-8">Fast Delivery &amp; Easy Returns!</span>
         </div>
+      </div>
 
-        {loadingBestSellers ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="aspect-square bg-muted animate-pulse rounded-lg" />
-            ))}
+      {/* Best Sellers Section */}
+      {newarrivals && newarrivals.length > 0 && (
+        <section className="py-20 container mx-auto px-6">
+          <div className="flex justify-between items-center mb-12">
+            <div>
+              <h2 className="font-serif text-4xl font-light mb-2">New Arrivals</h2>
+              <p className="text-muted-foreground">Fresh designs just for you</p>
+            </div>
+            <Link href="/category/new-arrivals">
+              <Button variant="outline" data-testid="button-view-all-new-arrivals">
+                Shop All
+              </Button>
+            </Link>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-            {bestSellers?.slice(0, 4).map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        )}
-      </section>
+
+          {loadingNewArrivals ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="aspect-square bg-muted animate-pulse rounded-lg" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+              {newarrivals?.slice(0, 4).map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Categories Section */}
       <section className="py-20 bg-muted/30">

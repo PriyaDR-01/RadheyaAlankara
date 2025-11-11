@@ -78,14 +78,15 @@ export function ProductManagement() {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [formData, setFormData] = useState({
-        name: '',
-        description: '',
-        price: '',
-        category: '',
-        images: [] as string[],
-        stock: '',
-        isNewArrival: false,
-        isBestSeller: false,
+    name: '',
+    description: '',
+    price: '',
+    category: '',
+    images: [] as string[],
+    stock: '',
+    isNewArrival: false,
+    isBestSeller: false,
+    material: '',
     });
     const [imageUrls, setImageUrls] = useState<string[]>(['']);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -154,6 +155,7 @@ export function ProductManagement() {
             stock: '',
             isNewArrival: false,
             isBestSeller: false,
+            material: '',
         });
         setImageUrls(['']);
         setSelectedProduct(null);
@@ -257,6 +259,7 @@ export function ProductManagement() {
             stock: product.stock?.toString() || '0',
             isNewArrival: product.isNewArrival === 1,
             isBestSeller: product.isBestSeller === 1,
+            material: product.material || '',
         });
         setImageUrls(product.images && product.images.length > 0 ? product.images : ['']);
         setIsEditDialogOpen(true);
@@ -737,7 +740,7 @@ export function ProductManagement() {
                 </DialogTitle>
                 <DialogContent dividers>
                     <Typography variant="body2" color="text.secondary" gutterBottom>
-                        Add a new product to the jewelry collection
+                        Add a new product to the collection
                     </Typography>
 
                     <Box component="form" onSubmit={(e) => handleSubmit(e, false)} sx={{ mt: 2 }}>
@@ -780,6 +783,14 @@ export function ProductManagement() {
                                         inputProps: { min: 0 }
                                     }}
                                     helperText="Enter the number of items available in stock"
+                                />
+                                <TextField
+                                    fullWidth
+                                    label="Material"
+                                    value={formData.material}
+                                    onChange={e => setFormData(prev => ({ ...prev, material: e.target.value }))}
+                                    placeholder="e.g. 14k Gold, Natural Gemstone"
+                                    variant="outlined"
                                 />
 
                                 <FormControl fullWidth required>
@@ -1014,6 +1025,14 @@ export function ProductManagement() {
                                         inputProps: { min: 0 }
                                     }}
                                     helperText="Enter the number of items available in stock"
+                                />
+                                <TextField
+                                    fullWidth
+                                    label="Material"
+                                    value={formData.material}
+                                    onChange={e => setFormData(prev => ({ ...prev, material: e.target.value }))}
+                                    placeholder="e.g. 14k Gold, Natural Gemstone"
+                                    variant="outlined"
                                 />
 
                                 <FormControl fullWidth required>
