@@ -18,8 +18,8 @@ const categoryImages: Record<string, string> = {
 };
 
 export default function Home() {
-  const { data: bestsellers, isLoading: loadingBestSellers } = useQuery<Product[]>({
-    queryKey: ['/api/products/category/best-sellers'],
+  const { data: newarrivals, isLoading: loadingNewArrivals } = useQuery<Product[]>({
+    queryKey: ['/api/products/category/new-arrivals'],
   });
 
   const { data: categories, isLoading: loadingCategories } = useQuery<Category[]>({
@@ -40,22 +40,22 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Best Sellers Section */}
-      {bestsellers && bestsellers.length > 0 && (
+      {/* New Arrivals Section */}
+      {newarrivals && newarrivals.length > 0 && (
         <section className="py-20 container mx-auto px-6">
           <div className="flex justify-between items-center mb-12">
             <div>
-              <h2 className="font-serif text-4xl font-light mb-2">Best Sellers</h2>
-              <p className="text-muted-foreground">Our most popular picks</p>
+              <h2 className="font-serif text-4xl font-light mb-2">New Arrivals</h2>
+              <p className="text-muted-foreground">Fresh designs just for you</p>
             </div>
-            <Link href="/category/best-sellers">
-              <Button variant="outline" data-testid="button-view-all-best-sellers">
+            <Link href="/category/new-arrivals">
+              <Button variant="outline" data-testid="button-view-all-new-arrivals">
                 Shop All
               </Button>
             </Link>
           </div>
 
-          {loadingBestSellers ? (
+          {loadingNewArrivals ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="aspect-square bg-muted animate-pulse rounded-lg" />
@@ -63,7 +63,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-              {bestsellers?.slice(0, 4).map((product) => (
+              {newarrivals?.slice(0, 4).map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
