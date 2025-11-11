@@ -18,8 +18,8 @@ const categoryImages: Record<string, string> = {
 };
 
 export default function Home() {
-  const { data: newarrivals, isLoading: loadingNewArrivals } = useQuery<Product[]>({
-    queryKey: ['/api/products/category/new-arrivals'],
+  const { data: bestsellers, isLoading: loadingBestSellers } = useQuery<Product[]>({
+    queryKey: ['/api/products/category/best-sellers'],
   });
 
   const { data: categories, isLoading: loadingCategories } = useQuery<Category[]>({
@@ -41,21 +41,21 @@ export default function Home() {
       </div>
 
       {/* Best Sellers Section */}
-      {newarrivals && newarrivals.length > 0 && (
+      {bestsellers && bestsellers.length > 0 && (
         <section className="py-20 container mx-auto px-6">
           <div className="flex justify-between items-center mb-12">
             <div>
-              <h2 className="font-serif text-4xl font-light mb-2">New Arrivals</h2>
-              <p className="text-muted-foreground">Fresh designs just for you</p>
+              <h2 className="font-serif text-4xl font-light mb-2">Best Sellers</h2>
+              <p className="text-muted-foreground">Our most popular picks</p>
             </div>
-            <Link href="/category/new-arrivals">
-              <Button variant="outline" data-testid="button-view-all-new-arrivals">
+            <Link href="/category/best-sellers">
+              <Button variant="outline" data-testid="button-view-all-best-sellers">
                 Shop All
               </Button>
             </Link>
           </div>
 
-          {loadingNewArrivals ? (
+          {loadingBestSellers ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="aspect-square bg-muted animate-pulse rounded-lg" />
@@ -63,7 +63,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-              {newarrivals?.slice(0, 4).map((product) => (
+              {bestsellers?.slice(0, 4).map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
@@ -100,24 +100,24 @@ export default function Home() {
         </div>
       </section>
 
-      {/* New Arrivals Banner */}
+      {/* Best Sellers Banner */}
       <section className="py-16 bg-primary text-primary-foreground">
         <div className="container mx-auto px-6 text-center">
           <div className="max-w-2xl mx-auto">
             <p className="font-serif text-3xl md:text-4xl font-light mb-4 animate-pulse">
-              New Arrivals Every Week
+              Best Sellers This Season
             </p>
             <p className="text-lg opacity-90 mb-6">
-              Be the first to discover our latest designs
+              Discover our most loved designs
             </p>
-            <Link href="/category/new-arrivals">
+            <Link href="/category/best-sellers">
               <Button
                 variant="outline"
                 size="lg"
                 className="bg-transparent border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary"
-                data-testid="button-view-new-arrivals"
+                data-testid="button-view-best-sellers"
               >
-                View New Arrivals
+                View Best Sellers
               </Button>
             </Link>
           </div>
